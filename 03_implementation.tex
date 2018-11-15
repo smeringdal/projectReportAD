@@ -1,0 +1,12 @@
+\chapter{Implementation}
+\section{Implementation of Automatic Differentiation}
+When it comes to implementing Automatic Differentiation(AD) \textbf{(Må (AD)-forkortelsen gjentas ved nytt kapittel?)} there are two major concerns. First is that it must be easy and intuitive to use, the second is that it must be efficient code as it will be used in computational demanding calculations. 
+
+A convenient way to store the AD-variables in Julia is to make a struct that have two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian. The importance of the way you implement the AD operators can be expressed in a short example: Consider you have two variables $x$ and $y$ and you want to compute the function $f(x,y) = y+exp(2xy)$. If the implementation is based on making new functions that take in AD-variables as input parameters, it will look something like this: 
+\begin{center}
+    $f$ = \texttt{ADplus}($y$,\texttt{ADexp}(\texttt{ADtimes}(2,\texttt{ADtimes}($x,y$)))).
+\end{center}
+This is clearly not a suitable way to implement AD and should be avoided. Instead of making new functions that takes in AD-variables as parameters one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). In Julia this involves overloading the Base module such that when you write $x+y$ with x and y as AD-variables, Julia's Multiple Dispatch \textbf{ADD REF}, understand that it is your definition of the "+" operator that is meant to be used. This gives us the opportunity to only write $f = y+\exp(2xy)$ if we want to compute $f(x,y)$ for given $x$ and $y$. 
+
+\section{Applications of Automatic Differentiation}
+Next: starte med å skrive om newton-solveren jeg har laget som løser f(x) = 0.

@@ -1,0 +1,68 @@
+\documentclass[a4paper,11pt,twoside]{book}
+\usepackage{configurations/commands}
+\usepackage{configurations/packages}
+
+\begin{document}
+
+
+
+%The document formating starts here
+%================================================================================================================
+%Frontmatter
+\input{frontmatter/frontpage}
+\newpage\null\thispagestyle{empty}\newpage
+
+\setcounter{page}{0}
+\pagenumbering{roman}
+
+\input{frontmatter/preface}
+\input{frontmatter/abstract}
+
+\cleardoublepage
+\begingroup
+\let\cleardoublepage\clearpage
+\renewcommand*\contentsname{Table of Contents}
+\addcontentsline{toc}{chapter}{Table of Contents}
+\tableofcontents
+
+
+%\listoftables\addcontentsline{toc}{chapter}{List of Tables}
+%\cleardoublepage
+%\addcontentsline{toc}{chapter}{List of Figures}
+%\listoffigures								
+\endgroup
+
+%\input{frontmatter/dictionary}
+\newpage\null\thispagestyle{empty}\newpage
+\clearpage
+
+%End of frontmatter
+%================================================================================================================
+
+%Main Section
+
+\setcounter{page}{0}                                 %Resets the page counter to 0
+\pagenumbering{arabic}                               %Sets the page numbering to arabic numbers.
+
+\input{01_introduction.tex}
+\input{02_theory.tex}
+\input{03_implementation.tex}
+\input{04_result_and_discussion.tex}
+\input{05_conclusion_and_future_work.tex}
+
+%End of Main Section
+%================================================================================================================
+
+%Bibliography
+
+\clearpage
+\input{bibliography}
+\setcounter{chapter}{0}
+\renewcommand{\thechapter}{\Alph{chapter}}
+\renewcommand\chaptername{Appendix}
+\input{appendix}
+\newpage\null\thispagestyle{empty}\newpage
+%End bibliography
+%================================================================================================================
+
+\end{document}

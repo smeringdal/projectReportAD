@@ -1,0 +1,98 @@
+\chapter{Theory}
+\label{ch:theory}
+\section{Automatic differentiation}
+\label{sec:AD}
+Automatic differentiation (AD) is a method that makes the computer derive the derivatives with very little effort from the user. If you have not heard of AD before, the first thing that you might think of algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus like e.g.
+\begin{align*}
+    &\frac{d}{dx}x^n     = n\cdot x^{n-1} \\
+    &\frac{d}{dx}cos(x)  = -sin(x) \\
+    &\frac{d}{dx}\exp{x} = \exp{x} \\
+\end{align*}
+etc. and the chain- and product rule
+\begin{align*}
+    &\frac{d}{dx}f(x)\cdot g(x) = f'(x)\cdot g(x) + f(x)\cdot g'(x) \\
+    &\frac{d}{dx}f(g(x)) = g'(x)\cdot f'(g(x)).
+\end{align*}
+The computer will then use these rules on symbolic variables to obtain the derivative of any function given. This will give perfectly accurate derivatives, but the disadvantage with this approach is that it is computational demanding and as f(x) becomes more complex, the calculations will become slow.
+
+If AD is not symbolic differentiation you might think that it is finite differences, where you use the definition of the derivative
+\begin{equation*}
+    \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
+\end{equation*}
+with a small h to obtain the numerical approximation of the derivative of f. This approach is not optimal because, first of all, if you choose an h too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, f(x+h) and f(x) and then divide by a small number h. This means that any small rounding errors in the subtraction will be hugely magnified by the division. Secondly, if you choose h too large your approximation of the derivative will not be accurate. 
+
+AD
+
+The type of AD I will look further into is the one described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. The method is similar to symbolic differentiation in the way that we implement the differentiation rules, but it differs by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives. This is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
+
+As an example, consider the function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for f we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$ where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
+\begin{equation}
+    \begin{aligned}
+    &\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big] \pm \big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big] = \big[f \pm g \hspace{0.5em} , \hspace{0.5em}  f_x \pm g_x\big] \hspace{0.5em}, \\\\
+    &\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\cdot \big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big] = \big[f\cdot g \hspace{0.5em} , \hspace{0.5em}  f_x\cdot g + f\cdot g_x\big],\\\\
+    &\frac{\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]}{\big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big]} = \Bigg[\frac{f}{g} \hspace{0.5em} , \hspace{0.5em}  \frac{f_x\cdot g - f\cdot g_x}{g^2}\Bigg].
+\end{aligned}
+\label{eq:arithmeticOperators}
+\end{equation}
+
+It is also necessary to define the chain rule such that for a function h(x),  $h\bigg(\big[f \hspace{0.5em} , \hspace{0.5em} f_x\big]\bigg) = \big[h(f) \hspace{0.5em} , \hspace{0.5em}  f_x\cdot h'(f)\big]$. The only thing that remains to define are the rules concerning elementary functions like
+\begin{equation}
+    \begin{aligned}
+    &\exp\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \big[\exp(f) \hspace{0.5em} , \hspace{0.5em}  \exp(f)\cdot f_x\big],\\
+    &\log\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \Big[\log(f) \hspace{0.5em} , \hspace{0.5em}  \frac{f_x}{f}\Big],\\
+    &\sin\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \big[\sin(f) \hspace{0.5em} , \hspace{0.5em}  \sin(f)\cdot f_x\big]\text{,  etc.}\\
+\end{aligned}
+\label{eq:elementaryFunctions}
+\end{equation}
+
+When these arithmetic operators and the elementary function are implemented you are able to calculate any scalar function derivative without actually doing any form of differentiation yourselves. Let us look at an step by step example where $f(x) = x\cdot\exp(2x)$ for x = 2. Then the declaration of the AD-variable x gives
+\begin{equation*}
+    x = [2 \hspace{0.5em} , \hspace{0.5em}  1].
+\end{equation*}
+All scalars can be looked at as AD variables with derivative equal to 0 such that
+\begin{align*}
+    2x &= [2 \hspace{0.5em} , \hspace{0.5em}  0]\cdot [2 \hspace{0.5em} , \hspace{0.5em} 1] \\
+    &=[2\cdot2 \hspace{0.5em} , \hspace{0.5em}  0\cdot1 + 2\cdot 1]\\
+    &=[4 \hspace{0.5em} , \hspace{0.5em} 2].
+\end{align*}
+After this computation we get from the exponential
+\begin{align*}
+    \exp(2x) &= \exp\big([4 \hspace{0.5em} , \hspace{0.5em} 2]\big)\\
+    &= [\exp(4) \hspace{0.5em} , \hspace{0.5em} \exp(4)\cdot 2],
+\end{align*}
+and lastly from the product rule we get the correct tuple for $f(x)$
+\begin{align*}
+    x\cdot \exp(2x) &= [2 \hspace{0.5em} , \hspace{0.5em}  1]\cdot [\exp(4)\hspace{0.5em}, \hspace{0.5em} 2\cdot\exp(4)]\\
+    &=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em}  1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)]\\
+    [f\hspace{0.5em},\hspace{0.5em} f_x]&=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em} 5\cdot\exp(4)].
+\end{align*}
+This result is equal
+\begin{equation*}
+    \big(f(x) \hspace{0.5em},\hspace{0.5em} f_x(x)\big) = \big(x\cdot\exp(2x) \hspace{0.5em},\hspace{0.5em} (1+2x)\exp(2x)\big)
+\end{equation*}
+for $x = 2$.\\
+
+But AD is not limited to functions with single variables. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
+\begin{equation*}
+    [x\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\hspace{2em},\hspace{2em}
+    [y\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\hspace{2em},\hspace{2em}
+    [z\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top].
+\end{equation*}
+
+There are now not only one scalar as the derivative value, but the gradient to the corresponding variable. The operators defined in Equations \ref{eq:arithmeticOperators} and the elementary functions in Equations \ref{eq:elementaryFunctions} are still valid, but instead of scalar products there are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
+\begin{align*}
+    xyz &= [1\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\cdot [2\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\cdot
+    [3\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top] \\
+    &=[1\cdot 2\cdot 3\hspace{0.5em},\hspace{0.5em}2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top] \\
+    [f\hspace{0.5em},\hspace{0.5em}f_x] &= [6\hspace{0.5em},\hspace{0.5em}(6,3,2)^\top].
+\end{align*}
+This result is equal to the tuple
+\begin{equation*}
+    \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz \hspace{0.5em},\hspace{0.5em} (yz,xz,xy)^\top\big)
+\end{equation*}
+for the corresponding $x$, $y$ and $z$ values. \\
+
+One approach to implementing forward AD
+
+\section{Julia}
+Er vel relevant å ha en seksjon om Julia, men i teori eller annet sted? I hvilken grad skal jeg skrive om at det er en implementasjon av noe som allerede er gjort i Matlab i MRST, men som nå implementeres i Julia? Hvor er det eventuelt relevant å skrive om det?

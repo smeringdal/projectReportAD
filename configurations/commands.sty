@@ -1,0 +1,32 @@
+% ===== Font ======================
+
+% --- Bold and italics
+\newcommand{\textbi}[1]{\textbf{\textit{#1}}}
+
+
+% ===== Miscellaneous =============
+
+% --- Inline quotes
+\newcommand{\inquote}[1]{``#1''}
+
+% --- Remark environment
+\newenvironment{remark}{\par\mbox{}\par\noindent{\bfseries \emph{Remark}\/}:\normalfont}{\par}
+
+% --- Define environment
+\newenvironment{define}{\par\mbox{}\par\noindent\bfseries \emph{\Pointinghand\ }\normalfont}{\par}
+
+% --- Signature
+\newcommand\signature[6]{\par\bigskip
+  \begin{tabular}
+  {@{\hspace{.05\textwidth}}>{\centering\arraybackslash}p{.4\textwidth}
+      @{\hspace*{.1\textwidth}}>{\centering\arraybackslash}p{.4\textwidth}@{\hspace{.05\textwidth}}}
+  \multicolumn{2}{c}{#1, \today}                                \\[10ex]
+  \rule{.4\textwidth}{0.4pt}    & \rule{.4\textwidth}{0.4pt}    \\
+           #2                   &       #3                      \\[10ex]
+  \rule{.4\textwidth}{0.4pt}    & \rule{.4\textwidth}{0.4pt}    \\
+           #4                   &       #5                      \\[10ex]
+  \multicolumn{2}{c}{\rule{.4\textwidth}{0.4pt}}                \\
+  \multicolumn{2}{c}{#6}
+\end{tabular}
+\par
+}
