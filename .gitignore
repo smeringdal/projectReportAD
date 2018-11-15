@@ -1,0 +1,14 @@
+!.ssh/
+.ssh/*
+!.ssh/config
+!.bash_profile
+!.gitignore
+!.vimrc
+!README
+!.gitconfig
+.idea/**
+.DS_Store
+cmake-build-debug/**
+# OSX / *nix default autosave extension MATLAB
+*.m~
+.texpadtmp/

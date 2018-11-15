@@ -2,7 +2,7 @@
 \label{ch:theory}
 \section{Automatic differentiation}
 \label{sec:AD}
-Automatic differentiation (AD) is a method that makes the computer derive the derivatives with very little effort from the user. If you have not heard of AD before, the first thing that you might think of algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus like e.g.
+Automatic differentiation (AD) is a method that makes the computer derive the derivatives with very little effort from the user. If you have not heard of AD before, the first thing that you might think of is algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus like e.g.
 \begin{align*}
     &\frac{d}{dx}x^n     = n\cdot x^{n-1} \\
     &\frac{d}{dx}cos(x)  = -sin(x) \\
@@ -21,9 +21,13 @@ If AD is not symbolic differentiation you might think that it is finite differen
 \end{equation*}
 with a small h to obtain the numerical approximation of the derivative of f. This approach is not optimal because, first of all, if you choose an h too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, f(x+h) and f(x) and then divide by a small number h. This means that any small rounding errors in the subtraction will be hugely magnified by the division. Secondly, if you choose h too large your approximation of the derivative will not be accurate. 
 
-AD
+AD can be split into two different methods - forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives as we go. Both methods does this by separating each expression into a finite set of elementary operations. 
 
-The type of AD I will look further into is the one described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. The method is similar to symbolic differentiation in the way that we implement the differentiation rules, but it differs by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives. This is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
+\subsection{Backward Automatic Differentiation}
+\textbf{TODO: Write about backward AD}
+
+\subsection{Forward Automatic Differentiation}
+In forward AD, similar to backward AD, the function value is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
 
 As an example, consider the function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for f we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$ where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
 \begin{equation}
@@ -35,7 +39,11 @@ As an example, consider the function $f = f(x)$ with its derivative $f_x$ where 
 \label{eq:arithmeticOperators}
 \end{equation}
 
-It is also necessary to define the chain rule such that for a function h(x),  $h\bigg(\big[f \hspace{0.5em} , \hspace{0.5em} f_x\big]\bigg) = \big[h(f) \hspace{0.5em} , \hspace{0.5em}  f_x\cdot h'(f)\big]$. The only thing that remains to define are the rules concerning elementary functions like
+It is also necessary to define the chain rule such that for a function h(x)
+\begin{equation*}
+h\big(f(x)\big) = h\bigg(\big[f \hspace{0.5em} , \hspace{0.5em} f_x\big]\bigg) = \big[h(f) \hspace{0.5em} , \hspace{0.5em}  f_x\cdot h'(f)\big]. 
+\end{equation*}
+The only thing that remains to define are the rules concerning elementary functions like
 \begin{equation}
     \begin{aligned}
     &\exp\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \big[\exp(f) \hspace{0.5em} , \hspace{0.5em}  \exp(f)\cdot f_x\big],\\
@@ -72,7 +80,46 @@ This result is equal
 \end{equation*}
 for $x = 2$.\\
 
-But AD is not limited to functions with single variables. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
+\subsection{Dual Numbers}
+One approach to implementing forward AD is by dual numbers. Similar to complex numbers dual numbers are defined as 
+\begin{equation}
+    a + b\epsilon.
+    \label{eq:DualNumbers}
+\end{equation}
+Here $a$ and $b$ are scalars and corresponds to the function value and the derivative value. $\epsilon$ is like we have for complex numbers $i^2 = -1$, but the corresponding relation for dual numbers are $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form of definition \eqref{eq:DualNumbers}. Then we get for addition
+\begin{align*}
+x+y &= (a+b\epsilon)\cdot(c+d\epsilon)\\
+    &= a+c+(b+d)\epsilon,
+\end{align*}
+for multiplication
+\begin{align*}
+x\cdot y &= (a+b\epsilon)\cdot(c+d\epsilon)\\
+    &= ac + (ad + bc)\epsilon + bd\epsilon^2 \\
+    &= ac + (ad + bc)\epsilon,
+\end{align*}
+and for division
+\begin{align*}
+\frac{x}{y} &= \frac{a+b\epsilon}{c+d\epsilon}\\
+    &=\frac{a+b\epsilon}{c+d\epsilon} \cdot \frac{c-d\epsilon}{c-d\epsilon}\\
+    &=\frac{ac-(ad-bc)\epsilon-bd\epsilon^2}{c^2-d\epsilon^2}\\
+    &=\frac{a}{c} + \frac{bc-ad}{c^2}\epsilon.
+\end{align*}
+This is very convenient, but how does dual numbers handle elementary functions like $\sin$, $\exp$, $\log$ etc? If we look at the Taylor expansion of a function $f(x)$ where x is a dual number, we get
+\begin{align*}
+    f(x) = f(a+b\epsilon) &= f(a) + \frac{f'(a)}{1!}(b\epsilon) + \frac{f''(a)}{2!}(b\epsilon)^2+...\\
+        &=f(a) + f'(a)b\epsilon.
+\end{align*}
+This means that to make dual numbers handle elementary functions, the first order Taylor expansion needs to be implemented. This equals the implementation of elementary differentiation rules described in equations \eqref{eq:elementaryFunctions}. 
+
+The weakness of implementing AD with dual numbers is clear for functions with multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter and the rest as constants:
+\begin{align*}
+    f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)\\
+        &=7+3\epsilon.
+\end{align*}
+$7$ is now the function value of f, while 3 is the derivative value of f with respect to x, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have many input variables, we need equally many function evaluations to determine the jacobian of the function.
+
+\subsection{Forward Automatic Differentiation with multiple parameters}
+To handle the problem of many function evaluations in forward AD when having a function with many input parameters one can look at the method described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
 \begin{equation*}
     [x\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\hspace{2em},\hspace{2em}
     [y\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\hspace{2em},\hspace{2em}
@@ -92,7 +139,23 @@ This result is equal to the tuple
 \end{equation*}
 for the corresponding $x$, $y$ and $z$ values. \\
 
-One approach to implementing forward AD
 
 \section{Julia}
 Er vel relevant å ha en seksjon om Julia, men i teori eller annet sted? I hvilken grad skal jeg skrive om at det er en implementasjon av noe som allerede er gjort i Matlab i MRST, men som nå implementeres i Julia? Hvor er det eventuelt relevant å skrive om det?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

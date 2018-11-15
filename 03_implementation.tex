@@ -1,6 +1,6 @@
 \chapter{Implementation}
 \section{Implementation of Automatic Differentiation}
-When it comes to implementing Automatic Differentiation(AD) \textbf{(Må (AD)-forkortelsen gjentas ved nytt kapittel?)} there are two major concerns. First is that it must be easy and intuitive to use, the second is that it must be efficient code as it will be used in computational demanding calculations. 
+When it comes to implementing Automatic Differentiation(AD) there are two major concerns. First is that it must be easy and intuitive to use, the second is that it must be efficient code as it will be used in computational demanding calculations. 
 
 A convenient way to store the AD-variables in Julia is to make a struct that have two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian. The importance of the way you implement the AD operators can be expressed in a short example: Consider you have two variables $x$ and $y$ and you want to compute the function $f(x,y) = y+exp(2xy)$. If the implementation is based on making new functions that take in AD-variables as input parameters, it will look something like this: 
 \begin{center}
