@@ -23,11 +23,8 @@ with a small h to obtain the numerical approximation of the derivative of f. Thi
 
 AD can be split into two different methods - forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives as we go. Both methods does this by separating each expression into a finite set of elementary operations. 
 
-\subsection{Backward Automatic Differentiation}
-\textbf{TODO: Write about backward AD}
-
 \subsection{Forward Automatic Differentiation}
-In forward AD, similar to backward AD, the function value is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
+In forward AD, the function value is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
 
 As an example, consider the function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for f we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$ where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
 \begin{equation}
@@ -53,11 +50,12 @@ The only thing that remains to define are the rules concerning elementary functi
 \label{eq:elementaryFunctions}
 \end{equation}
 
-When these arithmetic operators and the elementary function are implemented you are able to calculate any scalar function derivative without actually doing any form of differentiation yourselves. Let us look at an step by step example where $f(x) = x\cdot\exp(2x)$ for x = 2. Then the declaration of the AD-variable x gives
-\begin{equation*}
-    x = [2 \hspace{0.5em} , \hspace{0.5em}  1].
-\end{equation*}
-All scalars can be looked at as AD variables with derivative equal to 0 such that
+When these arithmetic operators and the elementary function are implemented you are able to calculate any scalar function derivative without actually doing any form of differentiation yourselves. Let us look at an step by step example where 
+\begin{equation}
+    \label{eq:forwardADExample}
+    f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
+\end{equation}
+Then the declaration of the AD-variable x gives $x = [2 \hspace{0.5em} , \hspace{0.5em}  1]$. All scalars can be looked at as AD variables with derivative equal to 0 such that
 \begin{align*}
     2x &= [2 \hspace{0.5em} , \hspace{0.5em}  0]\cdot [2 \hspace{0.5em} , \hspace{0.5em} 1] \\
     &=[2\cdot2 \hspace{0.5em} , \hspace{0.5em}  0\cdot1 + 2\cdot 1]\\
@@ -78,7 +76,8 @@ This result is equal
 \begin{equation*}
     \big(f(x) \hspace{0.5em},\hspace{0.5em} f_x(x)\big) = \big(x\cdot\exp(2x) \hspace{0.5em},\hspace{0.5em} (1+2x)\exp(2x)\big)
 \end{equation*}
-for $x = 2$.\\
+for $x = 2$.
+
 
 \subsection{Dual Numbers}
 One approach to implementing forward AD is by dual numbers. Similar to complex numbers dual numbers are defined as 
@@ -117,6 +116,35 @@ The weakness of implementing AD with dual numbers is clear for functions with mu
         &=7+3\epsilon.
 \end{align*}
 $7$ is now the function value of f, while 3 is the derivative value of f with respect to x, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have many input variables, we need equally many function evaluations to determine the jacobian of the function.
+
+\subsection{Backward Automatic Differentiation}
+The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where Backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
+\begin{equation}
+    \label{eq:chainRule}
+    \frac{\partial f}{\partial x} = \sum_i\left(\frac{\partial f}{\partial u_i}\cdot\frac{\partial u_i}{\partial x}\right).
+\end{equation}
+Take $f(x) = x\cdot\exp(2x)$ like in the forward AD example \eqref{eq:forwardADExample}. Then we split up the expression into functions $w_1$, $w_2$, $w_3$ and $f$ such that 
+\begin{equation*}
+w_1 = x \hspace{2em} w_2 = 2w_1 \hspace{2em} w_3 = \exp(w_2)
+\end{equation*}
+Now the function can be described as $f = w_1\cdot w_3$. If we want the derivative of $f$ with respect to $x$ we can obtain expressions for all $w$'s by using the chain rule \eqref{eq:chainRule}
+\begin{align*}
+     \frac{\partial w_1}{\partial x} &= 1, \\
+     \frac{\partial w_2}{\partial x} &= 2\cdot\frac{\partial w_1}{\partial w_1}\cdot\frac{\partial w_1}{\partial x} = 2, \\
+     \frac{\partial w_3}{\partial x} &= \frac{\partial}{\partial w_2}\exp(w_2)\cdot\frac{\partial w_2}{\partial x} = 2\exp(2x).
+\end{align*}
+Lastly by calculating the derivative of $f$ with respect to $x$ in the same matter yields
+\begin{align*}
+\frac{\partial f}{\partial x} &= \frac{\partial w_1}{\partial x}\cdot w_3 + w_1\cdot\frac{\partial w_3}{\partial x}\\
+&= \exp(2x) + x\cdot 2\exp(2x) \\
+&= (1+2x)\exp(2x).
+\end{align*}
+This shows that forward AD split up the operations and uses the chain rule with respect to the dependent variables. Backward AD also uses the chain rule, but in the opposite direction. It uses it with respect to the functions. The chain rule then has the form
+\begin{equation*}
+    \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right).
+\end{equation*}
+\textbf{TODO: Fix the notation and finish writing argument. ?See if it is possible to make changes to the forward AD example to make it more similar?}
+
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
 To handle the problem of many function evaluations in forward AD when having a function with many input parameters one can look at the method described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
