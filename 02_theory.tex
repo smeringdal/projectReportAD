@@ -87,7 +87,7 @@ One approach to implementing forward AD is by dual numbers. Similar to complex n
 \end{equation}
 Here $a$ and $b$ are scalars and corresponds to the function value and the derivative value. $\epsilon$ is like we have for complex numbers $i^2 = -1$, but the corresponding relation for dual numbers are $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form of definition \eqref{eq:DualNumbers}. Then we get for addition
 \begin{align*}
-x+y &= (a+b\epsilon)\cdot(c+d\epsilon)\\
+x+y &= (a+b\epsilon)+(c+d\epsilon)\\
     &= a+c+(b+d)\epsilon,
 \end{align*}
 for multiplication
@@ -121,32 +121,97 @@ $7$ is now the function value of f, while 3 is the derivative value of f with re
 The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where Backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
 \begin{equation}
     \label{eq:chainRule}
-    \frac{\partial f}{\partial x} = \sum_i\left(\frac{\partial f}{\partial u_i}\cdot\frac{\partial u_i}{\partial x}\right).
+    \frac{\partial f}{\partial t} = \sum_i\left(\frac{\partial f}{\partial g_i}\cdot\frac{\partial g_i}{\partial t}\right).
 \end{equation}
-Take $f(x) = x\cdot\exp(2x)$ like in the forward AD example \eqref{eq:forwardADExample}. Then we split up the expression into functions $w_1$, $w_2$, $w_3$ and $f$ such that 
-\begin{equation*}
-w_1 = x \hspace{2em} w_2 = 2w_1 \hspace{2em} w_3 = \exp(w_2)
-\end{equation*}
-Now the function can be described as $f = w_1\cdot w_3$. If we want the derivative of $f$ with respect to $x$ we can obtain expressions for all $w$'s by using the chain rule \eqref{eq:chainRule}
+Take $f(x) = x\cdot\exp(2x)$ like in the forward AD example \eqref{eq:forwardADExample}. We then split up the function into a sequence of elementary functions
+\begin{equation}
+    \label{eq:BackwardADSeperationSimple}
+    x, \hspace{2em} g_1 = 2x, \hspace{2em} g_2 = \exp(g_1), \hspace{2em} g_3 = x\cdot g_2,
+\end{equation}
+where clearly $f(x) = g_3$. If we want the derivative of $f$ with respect to $x$ we can obtain expressions for all $g$'s by using the chain rule \eqref{eq:chainRule}
 \begin{align*}
-     \frac{\partial w_1}{\partial x} &= 1, \\
-     \frac{\partial w_2}{\partial x} &= 2\cdot\frac{\partial w_1}{\partial w_1}\cdot\frac{\partial w_1}{\partial x} = 2, \\
-     \frac{\partial w_3}{\partial x} &= \frac{\partial}{\partial w_2}\exp(w_2)\cdot\frac{\partial w_2}{\partial x} = 2\exp(2x).
+     \frac{\partial x}{\partial x} &= 1, \\
+     \frac{\partial g_1}{\partial x} &= 2, \\
+     \frac{\partial g_2}{\partial x} &= \frac{\partial}{\partial g_1}\exp(g_1)\cdot\frac{\partial g_1}{\partial x} = 2\exp(2x).
 \end{align*}
-Lastly by calculating the derivative of $f$ with respect to $x$ in the same matter yields
+Lastly by calculating the derivative of $g_3$ with respect to $x$ in the same matter yields the expression for the derivative of f
 \begin{align*}
-\frac{\partial f}{\partial x} &= \frac{\partial w_1}{\partial x}\cdot w_3 + w_1\cdot\frac{\partial w_3}{\partial x}\\
-&= \exp(2x) + x\cdot 2\exp(2x) \\
-&= (1+2x)\exp(2x).
+    \frac{\partial f}{\partial x} &= \frac{\partial g_3}{\partial x}\\
+    &=\frac{\partial x}{\partial x}\cdot g_2 + x\cdot\frac{\partial g_2}{\partial x}\\
+    &= \exp(2x) + x\cdot 2\exp(2x) \\
+    &= (1+2x)\exp(2x).
 \end{align*}
-This shows that forward AD split up the operations and uses the chain rule with respect to the dependent variables. Backward AD also uses the chain rule, but in the opposite direction. It uses it with respect to the functions. The chain rule then has the form
+This shows how forward AD actually uses the chain rule on a sequence of elementary functions with respect to the independent variables, in this case $x$. Backward AD also uses the chain rule, but in the opposite direction. It uses it with respect to dependent variables. The chain rule then has the form
+\begin{equation}
+    \label{eq:chainRuleReverse}
+    \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right),
+\end{equation}
+for some s to be chosen. The same example with $f(x) = x\cdot\exp(2x)$ and with the same sequence of elementary functions like in \eqref{eq:BackwardADSeperationSimple} gives the expressions from the chain rule \eqref{eq:chainRuleReverse}
+\begin{align*}
+    \frac{\partial s}{\partial g_3} &= \text{Unknown}\\
+    \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} &&\Longleftrightarrow \quad x\cdot \frac{\partial s}{\partial g_3} \\
+    \frac{\partial s}{\partial g_1} &= \frac{\partial g_2}{\partial g_1}\cdot \frac{\partial s}{\partial g_2} &&\Longleftrightarrow \quad g_2 \cdot \frac{\partial s}{\partial g_2} \\
+    \frac{\partial s}{\partial x} &= \frac{\partial g_3}{\partial x}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_1}{\partial x}\cdot \frac{\partial s}{\partial g_1} && \Longleftrightarrow \quad g_2\cdot \frac{\partial s}{\partial g_3} + 2\cdot \frac{\partial s}{\partial g_1}.\\
+\end{align*}
+By substituting $s$ with $g_3$ gives
+\begin{align*}
+    \frac{\partial g_3}{\partial g_3} &= 1\\
+    \frac{\partial g_3}{\partial g_2} &= x\\
+    \frac{\partial g_3}{\partial g_1} &= \exp(2x)\cdot x\\
+    \frac{\partial g_3}{\partial x} &= \exp(2x)\cdot 1 + 2\cdot\exp(2x)\cdot x = (1 + 2x)\exp(2x),\\
+\end{align*}
+hence we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of f compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z(\sin(x^2)+yx)$ and 
 \begin{equation*}
-    \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right).
+    g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
 \end{equation*}
-\textbf{TODO: Fix the notation and finish writing argument. ?See if it is possible to make changes to the forward AD example to make it more similar?}
+Now the derivatives from the chain rule in equation \eqref{eq:chainRuleReverse} becomes \\
+\begin{multicols}{3}
+    \noindent
+    \begin{align*}
+        \frac{\partial s}{\partial g_5} &= \text{Unknown}\\
+        \frac{\partial s}{\partial g_4} &= z\cdot\frac{\partial s}{\partial g_5}\\
+        \frac{\partial s}{\partial g_3} &= \frac{\partial s}{\partial g_4}
+    \end{align*}
+    \begin{align*}
+        \frac{\partial s}{\partial g_2} &= \frac{\partial s}{\partial g_4} \\
+        \frac{\partial s}{\partial g_1} &= \cos(g_1)\frac{\partial s}{\partial g_3}\\
+        \frac{\partial s}{\partial x}   &= 2x\cdot\frac{\partial s}{\partial g_1} + y\cdot\frac{\partial s}{\partial g_2}
+    \end{align*}
+    \begin{align*}
+        \frac{\partial s}{\partial y}   &= x\cdot\frac{\partial s}{\partial g_2}\\
+        \frac{\partial s}{\partial z}   &= g_4\cdot\frac{\partial s}{\partial g_5}
+    \end{align*}
+\end{multicols}
 
+substituting $s$ with $g_5$ yields
+\begin{multicols}{3}
+    \noindent
+    \begin{align*}
+        \frac{\partial g_5}{\partial g_5} &= 1\\
+        \frac{\partial g_5}{\partial g_4} &= z\\
+        \frac{\partial g_5}{\partial g_3} &= z
+    \end{align*}
+    \begin{align*}
+        \frac{\partial g_5}{\partial g_2} &= z\\
+        \frac{\partial g_5}{\partial g_1} &= \cos(x^2)\cdot z\\
+        \frac{\partial g_5}{\partial x}   &= 2x\cdot\cos(x^2)\cdot z + yz
+    \end{align*}
+    \begin{align*}
+        \frac{\partial g_5}{\partial y}   &= xz\\
+        \frac{\partial g_5}{\partial z}   &= \sin(x^2)+xy
+    \end{align*}
+\end{multicols}
+The calculation of the derivatives together with a dependency graph can be seen in figure \ref{fig:depency_graph_backward_AD}. This shows that we get all the derivatives of $f(x) = g_5$ with a single function evaluation!
+\begin{figure}[htbp]
+	\centering
+	    \includegraphics[width=0.9\textwidth]{figures/dependency_graph_backward_AD.pdf}
+	    \caption{NOT A FINISHED FIGURE. Just a quick sketch of the idea I have of visualising the process of backward AD as i felt it got a bit messy with all the expressions. Gladly receiving comments on the thought/suggestions to make it more clear}
+	\label{fig:depency_graph_backward_AD}
+\end{figure}
+Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function value and the derivative value as we did in forward AD. This means that we have to implement the dependency tree shown in figure \ref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. This is the reason why we here will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
+\textbf{TODO: Endre under så dette glir inn med det som er skrevet om BackwardAD over}
 To handle the problem of many function evaluations in forward AD when having a function with many input parameters one can look at the method described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
 \begin{equation*}
     [x\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\hspace{2em},\hspace{2em}
@@ -169,7 +234,6 @@ for the corresponding $x$, $y$ and $z$ values. \\
 
 
 \section{Julia}
-Er vel relevant å ha en seksjon om Julia, men i teori eller annet sted? I hvilken grad skal jeg skrive om at det er en implementasjon av noe som allerede er gjort i Matlab i MRST, men som nå implementeres i Julia? Hvor er det eventuelt relevant å skrive om det?
 
 
 
