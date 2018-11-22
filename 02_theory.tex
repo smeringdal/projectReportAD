@@ -115,13 +115,13 @@ The weakness of implementing AD with dual numbers is clear for functions with mu
     f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)\\
         &=7+3\epsilon.
 \end{align*}
-$7$ is now the function value of f, while 3 is the derivative value of f with respect to x, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have many input variables, we need equally many function evaluations to determine the jacobian of the function.
+$7$ is now the function value of f, while 3 is the derivative value of f with respect to x, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
 
 \subsection{Backward Automatic Differentiation}
 The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where Backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
 \begin{equation}
     \label{eq:chainRule}
-    \frac{\partial f}{\partial t} = \sum_i\left(\frac{\partial f}{\partial g_i}\cdot\frac{\partial g_i}{\partial t}\right).
+    \frac{\partial f}{\partial t} = \sum_i\left(\frac{\partial f}{\partial u_i}\cdot\frac{\partial u_i}{\partial t}\right).
 \end{equation}
 Take $f(x) = x\cdot\exp(2x)$ like in the forward AD example \eqref{eq:forwardADExample}. We then split up the function into a sequence of elementary functions
 \begin{equation}
@@ -146,7 +146,7 @@ This shows how forward AD actually uses the chain rule on a sequence of elementa
     \label{eq:chainRuleReverse}
     \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right),
 \end{equation}
-for some s to be chosen. The same example with $f(x) = x\cdot\exp(2x)$ and with the same sequence of elementary functions like in \eqref{eq:BackwardADSeperationSimple} gives the expressions from the chain rule \eqref{eq:chainRuleReverse}
+for some s to be chosen. In the same example with $f(x) = x\cdot\exp(2x)$ and with the same sequence of elementary functions like in \eqref{eq:BackwardADSeperationSimple} gives the expressions from the chain rule \eqref{eq:chainRuleReverse}
 \begin{align*}
     \frac{\partial s}{\partial g_3} &= \text{Unknown}\\
     \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} &&\Longleftrightarrow \quad x\cdot \frac{\partial s}{\partial g_3} \\
@@ -208,32 +208,38 @@ The calculation of the derivatives together with a dependency graph can be seen 
 	    \caption{NOT A FINISHED FIGURE. Just a quick sketch of the idea I have of visualising the process of backward AD as i felt it got a bit messy with all the expressions. Gladly receiving comments on the thought/suggestions to make it more clear}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function value and the derivative value as we did in forward AD. This means that we have to implement the dependency tree shown in figure \ref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. This is the reason why we here will have focus on implementing forward AD.
+Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function value and the derivative value as we did in forward AD. This means that we have to implement the dependency tree shown in figure \ref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
-\textbf{TODO: Endre under så dette glir inn med det som er skrevet om BackwardAD over}
-To handle the problem of many function evaluations in forward AD when having a function with many input parameters one can look at the method described by Knut-Andreas Lie in \emph{\citet{lieMrstUrl}}. Say we have three variables x, y and z. Then the corresponding AD-variables becomes
+When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with Dual Numbers. Knut-Andreas Lie describes in \emph{\citet{lieMrstUrl}} a method where we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$ and we want to obtain the gradient of $f$. Then the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables which is all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$ and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x,\hspace{0.5em} f_y,\hspace{0.5em} f_z)^\top$. To achieve this we define the corresponding AD-variables
 \begin{equation*}
     [x\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\hspace{2em},\hspace{2em}
     [y\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\hspace{2em},\hspace{2em}
     [z\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top].
 \end{equation*}
-
-There are now not only one scalar as the derivative value, but the gradient to the corresponding variable. The operators defined in Equations \ref{eq:arithmeticOperators} and the elementary functions in Equations \ref{eq:elementaryFunctions} are still valid, but instead of scalar products there are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
+Each primary AD-variable now not only store their derivative with respect to themselves, but the gradient. The operators defined in Equations \ref{eq:arithmeticOperators} and the elementary functions in Equations \ref{eq:elementaryFunctions} are still valid, but instead of scalar products there are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
 \begin{align*}
     xyz &= [1\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\cdot [2\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\cdot
     [3\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top] \\
     &=[1\cdot 2\cdot 3\hspace{0.5em},\hspace{0.5em}2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top] \\
-    [f\hspace{0.5em},\hspace{0.5em}f_x] &= [6\hspace{0.5em},\hspace{0.5em}(6,3,2)^\top].
+    [f\hspace{0.5em},\hspace{0.5em}\nabla f] &= [6\hspace{0.5em},\hspace{0.5em}(6,3,2)^\top].
 \end{align*}
 This result is equal to the tuple
 \begin{equation*}
     \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz \hspace{0.5em},\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
-for the corresponding $x$, $y$ and $z$ values. \\
+for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually  vector functions and not scalar functions, hence $f: \Re^n \rightarrow \Re^m$. Then it is the Jacobian of $f$ we are interested in
+\begin{align*}
+    \mat{J}  =
+    \begin{bmatrix}
+        \frac{\partial f_1}{\partial x_1} & \dotsb & \frac{\partial f_1}{x_n}\\
+        \vdots & \ddots & \vdots \\
+        \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
+    \end{bmatrix}.
+\end{align*}
+The forward AD method described above will be similar for a vector function and a scalar function as above, but there will be two differences in particular. The first one is that the primal variables needs to be initialised with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
 
 
-\section{Julia}
 
 
 

@@ -1,4 +1,16 @@
 \chapter{Implementation}
+\section{Julia}
+Julia is a new programming language that was created by Jeff Bezanson, Alan Edelman, Stefan Karpinski and Viral B. Shah  at MIT, Massachusetts Institute of Technology \emph{\citep{juliaLab}}. The language was created in 2009, but was first released publicly in 2012. In 2012 the creators said in a blog post \emph{\citep{juliaBlogRelease2012}} that
+\begin{quotation}
+"We want a language that’s open source, with a liberal license. We want the speed of C with the dynamism of Ruby. We want a language that’s homoiconic, with true macros like Lisp, but with obvious, familiar mathematical notation like Matlab. We want something as usable for general programming as Python, as easy for statistics as R, as natural for string processing as Perl, as powerful for linear algebra as Matlab, as good at gluing programs together as the shell. Something that is dirt simple to learn, yet keeps the most serious hackers happy. We want it interactive and we want it compiled. (Did we mention it should be as fast as C?)".
+\end{quotation}
+So in short, it seems to be the perfect language for numerical applications. There are already some packages in Julia for AD. Most of them are backward AD packages designed for machine learning like for example AutoGrad \emph{\citep{knet2016mlsys}} and Zygote \emph{\citep{innes2018don}}, but there is one package called ForwardDiff \emph{\citep{ForwardDiff}} that are using forward AD that are being developed by the Julia community. This package works very well for some applications, but for others it has some limitations that is not ideal i.e. 
+\begin{itemize}
+    \item The function we want to differentiate only accepts a single argument. This is possible to work around such that if you have vector function $f$ with input parameters $x,y,z \in \Re^n$ you can merge them into one vector of length $3n$ and then obtain the Jacobian. Although this works fine, it is not optimal and it can cause unreadable code.
+    \item The function we want to differentiate must be on the form of a generic Julia function i.e $g(x) = 3x.*x$. Here $x.*x$ symbolise all elements in $x$ are multiplied with itself. This means that a function like $h(x) = 3x.*x + \text{sum}(x)$ where all elements in $g(x)$ is added with the sum of all elements in x, it will not be possible to use ForwardDiff to obtain the Jacobian.
+    \item The Jacobian calculated is full matrix. In some calculations when the Jacobian is dense anyway, this will not have any major effect, but in many numerical applications the Jacobian will be sparse. By working with a sparse matrix on a full matrix structure we will loose a lot of potential computation efficiency.
+\end{itemize}
+
 \section{Implementation of Automatic Differentiation}
 When it comes to implementing Automatic Differentiation(AD) there are two major concerns. First is that it must be easy and intuitive to use, the second is that it must be efficient code as it will be used in computational demanding calculations. 
 
@@ -7,6 +19,9 @@ A convenient way to store the AD-variables in Julia is to make a struct that hav
     $f$ = \texttt{ADplus}($y$,\texttt{ADexp}(\texttt{ADtimes}(2,\texttt{ADtimes}($x,y$)))).
 \end{center}
 This is clearly not a suitable way to implement AD and should be avoided. Instead of making new functions that takes in AD-variables as parameters one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). In Julia this involves overloading the Base module such that when you write $x+y$ with x and y as AD-variables, Julia's Multiple Dispatch \textbf{ADD REF}, understand that it is your definition of the "+" operator that is meant to be used. This gives us the opportunity to only write $f = y+\exp(2xy)$ if we want to compute $f(x,y)$ for given $x$ and $y$. 
-
 \section{Applications of Automatic Differentiation}
 Next: starte med å skrive om newton-solveren jeg har laget som løser f(x) = 0.
+
+\section{Flow Solver With Automatic Differentiation}
+To test AD in a real world application I have implemented an example taken from the MATLAB Reservoir Simulation Toolbox (MRST) and implemented it in Julia. MRST is primary developed by the Computational Geosciences group in the department of Mathematics and Cybernetics at SINTEF Digital \emph{\cite{mrstHomepage}}. 
+
