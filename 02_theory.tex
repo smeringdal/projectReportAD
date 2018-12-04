@@ -19,14 +19,14 @@ If AD is not symbolic differentiation you might think that it is finite differen
 \begin{equation*}
     \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
 \end{equation*}
-with a small h to obtain the numerical approximation of the derivative of f. This approach is not optimal because, first of all, if you choose an h too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, f(x+h) and f(x) and then divide by a small number h. This means that any small rounding errors in the subtraction will be hugely magnified by the division. Secondly, if you choose h too large your approximation of the derivative will not be accurate. 
+with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$ and then divide by a small number $h$. This means that any small rounding errors in the subtraction, that may occur i.e. because of machine precision, will be hugely magnified by the division. Secondly, if you choose $h$ too large your approximation of the derivative will not be accurate. This is called the truncation error. Hence in finite differences you have the problem that you need a small step size $h$ to reduce the truncation error, but $h$ can not be too small, because the you get round-off errors. Hence the finite differences method is an unstable method and is not what we call AD.
 
 AD can be split into two different methods - forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives as we go. Both methods does this by separating each expression into a finite set of elementary operations. 
 
 \subsection{Forward Automatic Differentiation}
-In forward AD, the function value is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
+In forward AD, the function and derivative value is stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
 
-As an example, consider the function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for f we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$ where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
+As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for f we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$ where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
 \begin{equation}
     \begin{aligned}
     &\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big] \pm \big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big] = \big[f \pm g \hspace{0.5em} , \hspace{0.5em}  f_x \pm g_x\big] \hspace{0.5em}, \\\\
@@ -55,7 +55,7 @@ When these arithmetic operators and the elementary function are implemented you 
     \label{eq:forwardADExample}
     f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
 \end{equation}
-Then the declaration of the AD-variable x gives $x = [2 \hspace{0.5em} , \hspace{0.5em}  1]$. All scalars can be looked at as AD variables with derivative equal to 0 such that
+Then the declaration of the AD-variable gives $x = [2 \hspace{0.5em} , \hspace{0.5em}  1]$. All scalars can be looked at as AD variables with derivative equal to 0 such that
 \begin{align*}
     2x &= [2 \hspace{0.5em} , \hspace{0.5em}  0]\cdot [2 \hspace{0.5em} , \hspace{0.5em} 1] \\
     &=[2\cdot2 \hspace{0.5em} , \hspace{0.5em}  0\cdot1 + 2\cdot 1]\\
@@ -70,7 +70,7 @@ and lastly from the product rule we get the correct tuple for $f(x)$
 \begin{align*}
     x\cdot \exp(2x) &= [2 \hspace{0.5em} , \hspace{0.5em}  1]\cdot [\exp(4)\hspace{0.5em}, \hspace{0.5em} 2\cdot\exp(4)]\\
     &=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em}  1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)]\\
-    [f\hspace{0.5em},\hspace{0.5em} f_x]&=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em} 5\cdot\exp(4)].
+    [f\hspace{0.5em},\hspace{0.5em} f_x] &=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em} 5\cdot\exp(4)].
 \end{align*}
 This result is equal
 \begin{equation*}
@@ -115,7 +115,7 @@ The weakness of implementing AD with dual numbers is clear for functions with mu
     f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)\\
         &=7+3\epsilon.
 \end{align*}
-$7$ is now the function value of f, while 3 is the derivative value of f with respect to x, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
+$7$ is now the function value of $f$, while $3$ is the derivative value of $f$ with respect to $x$, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
 
 \subsection{Backward Automatic Differentiation}
 The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where Backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
@@ -208,7 +208,7 @@ The calculation of the derivatives together with a dependency graph can be seen 
 	    \caption{NOT A FINISHED FIGURE. Just a quick sketch of the idea I have of visualising the process of backward AD as i felt it got a bit messy with all the expressions. Gladly receiving comments on the thought/suggestions to make it more clear}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function value and the derivative value as we did in forward AD. This means that we have to implement the dependency tree shown in figure \ref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
+Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that when we implement this, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function- and the derivative values as we did in forward AD. This means that we have to implement the dependency tree shown in figure \ref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
 When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with Dual Numbers. Knut-Andreas Lie describes in \emph{\citet{lieMrstUrl}} a method where we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$ and we want to obtain the gradient of $f$. Then the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables which is all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$ and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x,\hspace{0.5em} f_y,\hspace{0.5em} f_z)^\top$. To achieve this we define the corresponding AD-variables
@@ -217,7 +217,7 @@ When we are dealing with functions with many input parameters and we wish to imp
     [y\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\hspace{2em},\hspace{2em}
     [z\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top].
 \end{equation*}
-Each primary AD-variable now not only store their derivative with respect to themselves, but the gradient. The operators defined in Equations \ref{eq:arithmeticOperators} and the elementary functions in Equations \ref{eq:elementaryFunctions} are still valid, but instead of scalar products there are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
+Each primary AD-variable now not only store their derivative with respect to themselves, but the gradient. The operators defined in Equations \ref{eq:arithmeticOperators} and the elementary functions in Equations \ref{eq:elementaryFunctions} are still valid, but instead of scalar products they are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
 \begin{align*}
     xyz &= [1\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\cdot [2\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\cdot
     [3\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top] \\
@@ -237,7 +237,7 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
     \end{bmatrix}.
 \end{align*}
-The forward AD method described above will be similar for a vector function and a scalar function as above, but there will be two differences in particular. The first one is that the primal variables needs to be initialised with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
+The forward AD method described above will be similar for a vector function as it was for a scalar function above, but there will be two differences in particular. The first one is that the primal variables needs to be initialised with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
 
 
 
