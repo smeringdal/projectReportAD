@@ -1,5 +1,6 @@
 \chapter{Implementation}
 \section{Julia}
+\label{sec:Julia}
 Julia is a new programming language that was created by Jeff Bezanson, Alan Edelman, Stefan Karpinski and Viral B. Shah  at MIT, Massachusetts Institute of Technology \emph{\citep{juliaLab}}. The language was created in 2009, but was first released publicly in 2012. In 2012 the creators said in a blog post \emph{\citep{juliaBlogRelease2012}} that
 \begin{quotation}
 "We want a language that’s open source, with a liberal license. We want the speed of C with the dynamism of Ruby. We want a language that’s homoiconic, with true macros like Lisp, but with obvious, familiar mathematical notation like Matlab. We want something as usable for general programming as Python, as easy for statistics as R, as natural for string processing as Perl, as powerful for linear algebra as Matlab, as good at gluing programs together as the shell. Something that is dirt simple to learn, yet keeps the most serious hackers happy. We want it interactive and we want it compiled. (Did we mention it should be as fast as C?)".
@@ -7,18 +8,70 @@ Julia is a new programming language that was created by Jeff Bezanson, Alan Edel
 So in short, it seems to be the perfect language for numerical applications. There are already some packages in Julia for AD. Most of them are backward AD packages designed for machine learning like for example AutoGrad \emph{\citep{knet2016mlsys}} and Zygote \emph{\citep{innes2018don}}, but there is one package called ForwardDiff \emph{\citep{ForwardDiff}} that are using forward AD that are being developed by the Julia community. This package works very well for some applications, but for others it has some limitations that is not ideal i.e. 
 \begin{itemize}
     \item The function we want to differentiate only accepts a single argument. This is possible to work around such that if you have vector function $f$ with input parameters $x,y,z \in \Re^n$ you can merge them into one vector of length $3n$ and then obtain the Jacobian. Although this works fine, it is not optimal and it can cause unreadable code.
-    \item The function we want to differentiate must be on the form of a generic Julia function i.e $g(x) = 3x.*x$. Here $x.*x$ symbolise all elements in $x$ are multiplied with itself. This means that if we have a function like $h(x) = 3x.*x + \text{sum}(x)$ where all elements in $g(x)$ is added with the sum of all elements in $x$, it will not be possible to use ForwardDiff to obtain the Jacobian.
+    \item The function we want to differentiate must be on the form of a generic Julia function i.e $g(x) = 3x.*x$. Here $x.*x$ symbolise element wise multiplication. This means that if we have a function like $h(x) = 3x.*x + \text{sum}(x)$ where all elements in $g(x)$ is added with the sum of all elements in $x$, it will not be possible to use ForwardDiff to obtain the Jacobian.
     \item The Jacobian calculated is a full matrix. In some calculations when the Jacobian is dense anyway, this will not have any major effect, but in many numerical applications the Jacobian will be sparse. By working with a sparse matrix on a full matrix structure we will loose a lot of potential computation efficiency.
 \end{itemize}
 
 \section{Implementation of Automatic Differentiation}
 When it comes to implementing Automatic Differentiation(AD) there are two major concerns. First is that it must be easy and intuitive to use, the second is that it must be efficient code as it will be used in computational demanding calculations. 
 
-A convenient way to store the AD-variables in Julia is to make a struct that have two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian. The importance of the way you implement the AD operators and elementary functions can be expressed in a short example: Consider you have two variables $x$ and $y$ and you want to compute the function $f(x,y) = y+\exp(2xy)$. If the implementation is based on making new functions that take in AD-variables as input parameters, it will look something like this: 
+A convenient way to store the AD-variables in Julia is to make a struct that have two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian. The importance of the way you implement the AD operators and elementary functions can be expressed in a short example: Consider you have two variables $x$ and $y$ and you want to compute the function $f(x,y) = y+\exp(2xy)$. If the implementation is based on making new functions that take in AD-variables as input parameters, it will for the evaluation of $f$ look something like this: 
 \begin{center}
     $f$ = \texttt{ADplus}($y$,\texttt{ADexp}(\texttt{ADtimes}(2,\texttt{ADtimes}($x,y$)))).
 \end{center}
-This is clearly not a suitable way to implement AD and should be avoided. Instead of making new functions that takes in AD-variables as parameters one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). In Julia this can be done by exploiting the fact that Julia has Multiple Dispatch. A quick explanation of Multiple Dispatch that satisfies our needs is that at runtime, the compiler understands what types are given as input for either a operator or a function and chooses the correct method based on this. This means that if I declare $x = 1$, $y = 3$ and then $z = x+y$, then Julia understands that it is the normal addition for integers it should use. But if we overload the Base module + operator for AD-variables such that when you declare $x,y = \texttt{initiateADVariables}(1,3)$ such that $x$ and $y$ both are AD variables, then when we write $z = x+y$, Julia's Multiple Dispatch will understand that it is our definition of the "+" operator for AD-structs that is meant to be used. This gives us the opportunity to only write $z = y+\exp(2xy)$ and $z$ will be an AD-variable with the correct value and derivatives. 
+This is clearly not a suitable way to implement AD and should be avoided. Instead of making new functions that takes in AD-variables as parameters one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). In Julia this can be done by exploiting the fact that Julia has Multiple Dispatch. A quick explanation of Multiple Dispatch that satisfies our needs is that at runtime, the compiler understands what types are given as input for either a operator or a function and chooses the correct method based on this. This is done by implementing a function 
+\lstinputlisting{code/overload_plus_operator_AD.jl}
+that overloads the + operator. Here we import the + operator from Base (Base is where the standard functions in Julia lies), and overloads it for AD variables. This means that it is only when there are AD variables on both sides of the operator that this implementation is used. Hence if I declare $x = 1$, $y = 3$ and then $z = x+y$, then Julia understands that it is not the definition above, but the normal addition for integers it should use. But if we declare $x,y = \texttt{initiateADVariables}(1,3)$ such that $x$ and $y$ both are AD variables, then when we write $z = x+y$, Julia's Multiple Dispatch will understand that it is our definition of the "+" operator that is meant to be used. This gives us the opportunity to only write $z = y+\exp(2xy)$ and Julia will understand that it is our implementation above that shall be used, and $z$ will become an AD-variable with the correct value and derivatives. A consequence of this is that if I now write $z = x + 3$, with x as an AD variable, Julia will deploy an error message. This is because we also have to implement
+\lstinputlisting{code/overload_plus_operator_number.jl}
+Here the first function will be used if the + operator is used with an AD variable on the left hand side and a number on the right. The last line is a compact way of writing the opposite function which will be used when the number is on the right hand side. But as you can see, we do not implement the same thing twice, we use the function we already have made.
+
+Another advantage of Julia's Multiple dispatch system is clear if we look at how we can overload the \texttt{sum} function. One might think that we would try something like
+\lstinputlisting{code/overload_sum.jl}
+which would indeed work, but to exploit Julia's Multiple Dispatch fully we can instead overload the \texttt{iterator} function. This function explains how we shall iterate through an AD variable. Now the built in \texttt{sum} function will work on AD variables since it knows how to iterate through the variable and when it adds up the values, the + operator we defined above is being used. And not only that! All built in functions that iterates through the input will also work (given that the functions it uses on the variable also are overloaded). As an example, if we now overload the elementary operation /, the Base function \texttt{mean} will also work on AD variables.
+
+\section{Benchmark of Automatic Differentiation}
+As mentioned in \autoref{sec:Julia}, there are already an AD library in Julia called ForwardDiff \emph{\citep{ForwardDiff}} that uses forward AD. Hence it would be interesting to see how the two implementations compares when the functions evaluated are getting larger. As another reference I have added the AD implementation in MATLAB Reservoir Simulation Toolbox (MRST) \emph{\cite{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimised AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
+\begin{equation}
+\label{eq:benchmarkFunction}
+f(x,y,z)  = \exp(2xy) - 4xz^2 + 13x - 7,
+\end{equation}
+and $x,y,z \in \Re^n$. Figure \ref{fig:benchmarkAD} shows how time spent calculating the function value and the Jacobian of the function, for the different methods, scales as the length of the vectors $n$ increases.
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width = \textwidth]{figures/benchmark_all_ADS.pdf}
+        \caption{}
+        \label{fig:benchmarkAllADs}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.49\textwidth}
+        \centering
+        \includegraphics[width = \textwidth]{figures/benchmark_long_vectors_4.pdf}
+        \caption{}
+        \label{fig:benchmarkLongVectors}
+    \end{subfigure}
+    \caption{Time spent calculating the value and Jacobian of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors.}
+    \label{fig:benchmarkAD}
+\end{figure}
+In figure \ref{fig:benchmarkAllADs} we have four different graphs. The analytic graph is simply the evaluation of $f(x,y,z)$, $f_x$, $f_y$ and $f_z$. ForwardDiff is the AD package in Julia, MRST is the AD tool implemented in MATLAB and ForwardAutoDiff is the AD tool I have implemented. The first thing you observe is that ForwardDiff scales very badly as n becomes large. This is because it creates and works with the full Jacobian matrix as discussed in \autoref{sec:Julia}. We can also observe that for small vectors, MRST and ForwardAutoDiff have much more overhead than ForwardDiff and the analytic solution and hence are slower, but as $n$ grows, this overhead becomes more neglectable. Since both MRST and ForwardAutoDiff approaches the analytic evaluation as $n$ grows, it is interesting to see how they scale for even larger $n$. This can be seen in figure \ref{fig:benchmarkLongVectors}. Here ForwardDiff is left out since it becomes too slow, but I have added a new implementation from MRST which is specially optimised for element operations like we have when evaluating the function in \eqref{eq:benchmarkFunction}. This implementation actually becomes just as fast as the analytic evaluation in Julia for vectors of length $\approx 10^7$. As said, this method is specially efficient on functions like in \eqref{eq:benchmarkFunction}, but if we for example want to calculate something like
+\begin{equation}
+g(x) = x\left[2:\text{end}\right] - x\left[1:\text{end}-1\right]
+\label{eq:differenceFunction}
+\end{equation}
+the performance is more similar to the other MRST implementation. Other than that we can see that the trend seen in figure \ref{fig:benchmarkAllADs} concerning the speed difference of the older MRST implementation and ForwardAutoDiff continues for longer vectors.
+
+The creators stated in the blog post accompanying the first release of Julia in 2012 \emph{\citep{juliaBlogRelease2012}} that Julia is supposed to be just as fast as C. Hence it would be interesting to if we can increase computational efficiency of the evaluation of the vector function in \eqref{eq:benchmarkFunction} by evaluating it scalar by scalar in a loop instead of vector multiplications. The difference can be illustrated by the two functions
+\lstinputlisting{code/benchmark_functions.jl}
+Implementation specific parts are left out. The result can be seen in figure \ref{fig:adInLoop} where the graphs with circles as markers are the same methods as in figure \ref{fig:benchmarkAllADs} using the function \texttt{benchmarkAD}. and the graphs with squares are the same methods only they are tested with the implementation in function \texttt{benchmarkADinLoop}.
+\begin{figure}[htb]
+    \centering
+    \includegraphics[width = 0.9\textwidth]{figures/benchmark_ad_in_loop.pdf}
+    \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors. \textbf{TODO: få plottene som tilhører samme metode i samme farge}}
+    \label{fig:adInLoop}
+\end{figure}
+We can start by observing that the ForwardAutoDiff implementation is clearly not optimised for evaluating the vector function scalar by scalar as it is the slowest method we have tested so far for all vector lengths. The next interesting observation is that we can make ForwardDiff's evaluation of the vector function much more efficient. When using the method in \texttt{benchmarkADinLoop} we almost achieve the same test results as ForwardAutoDiff. Although, what is important to mention here is that with the approach in \texttt{benchmarkADinLoop} we only obtain the gradient of the function and not the Jacobian. In the particular case of the function f in \eqref{eq:benchmarkFunction}, the Jacobian will only be a diagonal matrix with the gradient of $f$ on the diagonal, but if we would evaluate a function like in \eqref{eq:differenceFunction}, this approach would not work. Hence although we almost manage to obtain the same performance in ForwardDiff as we have in ForwardAutoDiff, it comes with a cost. The implementation necessary to obtain the Jacobian with ForwardDiff and \texttt{benchmarkADinLoop} will slow the computation down and for a vector function with large input vectors, ForwardAutoDiff is a better approach. 
+
+Other than this, what is interesting to see is that the evaluation of the analytical solution in a loop is faster than the vectorised. Here Julia shows a real strength compared to MATLAB where a function evaluation like for the vector function f will be much slower in a loop than vector multiplication. \textbf{TODO: Lese gjennom de to siste avsnittene her på nytt. Legge med testeksempel av matlab-forløkke kode?} 
 
 \section{Applications of Automatic Differentiation}
 One simple application of AD is if you want to find the roots of a function. The simplest example is for a scalar function $f$ with a scalar input $x$ then the iteration scheme
