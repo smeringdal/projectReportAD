@@ -73,28 +73,6 @@ We can start by observing that the ForwardAutoDiff implementation is clearly not
 
 Other than this, what is interesting to see is that the evaluation of the analytical solution in a loop is faster than the vectorised. Here Julia shows a real strength compared to MATLAB where a function evaluation like for the vector function f will be much slower in a loop than vector multiplication. \textbf{TODO: Legge med testeksempel av matlab-forløkke kode?} 
 
-\section{Applications of Automatic Differentiation}
-One simple application of AD is if you want to find the roots of a function. The simplest example is for a scalar function $f$ with a scalar input $x$ then the iteration scheme
-\begin{equation*}
-    x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)},
-\end{equation*}
-for an initial $x_0$, will converge to a root of $f$ given that it satisfies the assumptions made in the derivation of the formulae. This is called the Newton-Raphson method. With AD this is super easy as you only have to define the function $f(x)$ and then the AD finds $f'(x)$ automatically. But this was a very trivial example and does not show the real strength of AD. Let us rather look at the linear system 
-\begin{equation}
-    \textbf{A}\boldsymbol{x} = \textbf{b}.
-    \label{eq:linearSystem}
-\end{equation}
-But instead of looking at it like in equation \eqref{eq:linearSystem} we write it on residual form such that
-\begin{equation*}
-	\boldsymbol{F}(\boldsymbol{x}) = \textbf{A}\boldsymbol{x} - \boldsymbol{b} = 0 .
-\end{equation*}
-This means that to solve the linear system in equation \eqref{eq:linearSystem}, we need to find the root of $\boldsymbol{F}(\boldsymbol{x})$. This can be done by choosing an initial value $\boldsymbol{x}^0$ and observe that since $\boldsymbol{F}(\boldsymbol{x})$ is linear, this will converge in one step using the multivariate Newton-Raphson method
-\begin{equation}
-	\boldsymbol{x}^{n+1} = \boldsymbol{x}^n - \left[J_{\boldsymbol{F}}  (\boldsymbol{x}^n)\right]^{-1} \boldsymbol{F}(\boldsymbol{x}^n).
-    \label{eq:newtonRaphsonVector}
-\end{equation}
-Here $\left[J_{\boldsymbol{F}}  (\boldsymbol{x}^n)\right]^{-1}$ is the inverse of the Jacobian of $\boldsymbol{F}$ at $\boldsymbol{x}^n$. For a simple system like equation \eqref{eq:linearSystem} it may seem a bit forced to use AD to solve for $\boldsymbol{x}$, but in numerical application we can easily solve non-linear equations by looking at the residual form and use the Newton-Raphson method \eqref{eq:newtonRaphsonVector} with AD. An example of this can be seen in section \ref{sec:FlowSolver}.
-\textbf{TODO: Se på denne når hodet er litt friskere. Ha med bevis for multivariate Newton-Raphson? Skrive videre om diskrete div og grad operatorer.}
-
 \section{Flow Solver With Automatic Differentiation}
 \label{sec:FlowSolver}
 To test AD in a real world application I have implemented an example taken from the MATLAB Reservoir Simulation Toolbox (MRST) and implemented it in Julia. MRST is primary developed by the Computational Geosciences group in the department of Mathematics and Cybernetics at SINTEF Digital \emph{\cite{mrstHomepage}}. According to MRST's homepage, "MRST is not primarily a simulator, but is mainly intended as a toolbox for rapid prototyping and demonstration of new simulation methods and modelling concepts". So although most of the tools and simulators in MRST are very efficient and perform well, if you are to simulate more heavy simulation they recommend to use the Open Porous Media (OPM) Flow simulator \emph{\citep{OPM}}. OPM is a toolbox to build simulations of porous media processes and are mainly written in C++ and C. Here the differences between the languages become clear. As MATLAB with its easy to use mathematical syntax is a great language to quickly make prototypes and demonstrations of simulations, it is failing when it comes to computational speed. But where MATLAB fails in computational speed, C++ and C are two very fast languages. The problem with C++ and C is that it is not built for numerical analysis, hence it takes longer time to create the simulations. This is where Julia comes in. As the founders of Julia said, Julia is meant to be a language as familiar to mathematical notations as MATLAB, but as fast as C. Hence it is interesting to figure out how Julia can perform compared to MRST.
