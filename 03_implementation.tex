@@ -143,8 +143,8 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
 \end{figure}
 
 After initialising the grid we want to define the discrete gradient and divergence operators as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G} and in \texttt{rock} we have stored the facets permeability that will affect the flux through the facets. This gives us the transmissibilities \texttt{T} and the discrete operators
-
-
+\lstinputlisting{code/grad_and_div.jl}
+The matrix C in the discrete operators are created by definition \eqref{eq:discreteGradient} such that it the pressure difference between two adjacent cells. The matrix C is stored as a sparse matrix, and the reason why is clear from
 governing equations for the flow in the reservoir. We use a finite volume method to discretize in space and a backward Euler method to discretize in time. To solve the equations we use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} with the residual form $\boldsymbol{F}(\boldsymbol{x}) = 0$. If we take a look at \autoref{fig:flowSolverJacobian}, we can see the structure of the Jacobian of $\boldsymbol{F}$. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. In MRST the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
 
 \begin{figure}[htbp]
