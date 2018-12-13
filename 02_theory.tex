@@ -238,10 +238,10 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
     \end{bmatrix}.
 \end{align*}
-The forward AD method described above will be similar for a vector function as it was for a scalar function above, but there will be two differences in particular. The first one is that the primal variables needs to be initialised with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
+The forward AD method described above will be similar for a vector function as it was for a scalar function above, but there will be two differences in particular. The first one is that the primal variables needs to be initialized with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
 
 \section{Applications of Automatic Differentiation}
-\label{ApplicationsAD}
+\label{sec:ApplicationsAD}
 AD can be used in a wide spectre of applications, but in common for them all is that we have a function, vector or scalar, we either want to minimise or find the roots of. The simplest example for finding roots is for a scalar function $f$ with a scalar input $x$. Then the iteration scheme
 \begin{equation*}
     x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)},

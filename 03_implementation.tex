@@ -33,7 +33,7 @@ which would indeed work, but to exploit Julia's Multiple Dispatch fully we can i
 Now the built in \texttt{sum} function will work on AD variables since it knows how to iterate through the variable and when it adds up the values, the + operator we defined above is being used. And not only that! All built in functions that iterates through the input will also work (given that the functions it uses on the variable also are overloaded). As an example, if we now overload the elementary operation /, the Base function \texttt{mean} will also work on AD variables.
 
 \section{Benchmark of Automatic Differentiation}
-As mentioned in \autoref{sec:Julia}, there are already an AD library in Julia called ForwardDiff \emph{\citep{ForwardDiff}} that uses forward AD. Hence it would be interesting to see how the two implementations compares when the functions evaluated are getting larger. As another reference I have added the AD implementation in MATLAB Reservoir Simulation Toolbox (MRST) \emph{\cite{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimised AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
+As mentioned in \autoref{sec:Julia}, there are already an AD library in Julia called ForwardDiff \emph{\citep{ForwardDiff}} that uses forward AD. Hence it would be interesting to see how the two implementations compares when the functions evaluated are getting larger. As another reference I have added the AD implementation in MATLAB Reservoir Simulation Toolbox (MRST) \emph{\cite{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
 \begin{equation}
 \label{eq:benchmarkFunction}
 f(x,y,z)  = \exp(2xy) - 4xz^2 + 13x - 7,
@@ -56,7 +56,7 @@ and $x,y,z \in \Re^n$. \autoref{fig:benchmarkAD} shows how time spent calculatin
     \caption{Time spent calculating the value and Jacobian of $f$ in \eqref{eq:benchmarkFunction} as a function of length of the input vectors.}
     \label{fig:benchmarkAD}
 \end{figure}
-In \autoref{fig:benchmarkAllADs} we have four different graphs. The analytic graph is simply the evaluation the analytic functions $f(x,y,z)$, $f_x$, $f_y$ and $f_z$. ForwardDiff is the AD package in Julia, MRST is the AD tool implemented in MATLAB and ForwardAutoDiff is the AD tool I have implemented in Julia. The first thing you observe is that ForwardDiff scales very badly as n becomes large. This is because it creates and works with the full Jacobian matrix as discussed in \autoref{sec:Julia}. For $f(x,y,z)$ this will be a $3n \times 3n$ matrix which is a matrix with more than 3billion elements for the largest values of $n$. We can also observe that for small vectors, MRST and ForwardAutoDiff have much more overhead than ForwardDiff and the analytic solution and hence are slower, but as $n$ grows, this overhead becomes more neglectable. Since both MRST and ForwardAutoDiff approaches the analytic evaluation as $n$ grows, it is interesting to see how they scale for even larger $n$. This can be seen in \autoref{fig:benchmarkLongVectors}. Here ForwardDiff is left out since it becomes too slow, but I have added a new implementation from MRST which is specially optimised for element operations like we have when evaluating the function in \eqref{eq:benchmarkFunction}. This implementation actually becomes just as fast as the analytic evaluation in Julia for vectors of length $\approx 10^7$. As said, this method is specially efficient on functions like in \eqref{eq:benchmarkFunction}, but if we for example want to calculate something like
+In \autoref{fig:benchmarkAllADs} we have four different graphs. The analytic graph is simply the evaluation the analytic functions $f(x,y,z)$, $f_x$, $f_y$ and $f_z$. ForwardDiff is the AD package in Julia, MRST is the AD tool implemented in MATLAB and ForwardAutoDiff is the AD tool I have implemented in Julia. The first thing you observe is that ForwardDiff scales very badly as n becomes large. This is because it creates and works with the full Jacobian matrix as discussed in \autoref{sec:Julia}. For $f(x,y,z)$ this will be a $3n \times 3n$ matrix which is a matrix with more than 3billion elements for the largest values of $n$. We can also observe that for small vectors, MRST and ForwardAutoDiff have much more overhead than ForwardDiff and the analytic solution and hence are slower, but as $n$ grows, this overhead becomes more neglectable. Since both MRST and ForwardAutoDiff approaches the analytic evaluation as $n$ grows, it is interesting to see how they scale for even larger $n$. This can be seen in \autoref{fig:benchmarkLongVectors}. Here ForwardDiff is left out since it becomes too slow, but I have added a new implementation from MRST which is specially optimized for element operations like we have when evaluating the function in \eqref{eq:benchmarkFunction}. This implementation actually becomes just as fast as the analytic evaluation in Julia for vectors of length $\approx 10^7$. As said, this method is specially efficient on functions like in \eqref{eq:benchmarkFunction}, but if we for example want to calculate something like
 \begin{equation}
 g(x) = x\left[2:\text{end}\right] - x\left[1:\text{end}-1\right],
 \label{eq:differenceFunction}
@@ -72,9 +72,9 @@ Implementation specific parts are left out. The result can be seen in \autoref{f
     \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors. \textbf{TODO: få plottene som tilhører samme metode i samme farge}}
     \label{fig:adInLoop}
 \end{figure}
-We can start by observing that the ForwardAutoDiff implementation is clearly not optimised for evaluating the vector function scalar by scalar as it is the slowest method we have tested so far for all vector lengths. The next interesting observation is that we can make ForwardDiff's evaluation of the vector function much more efficient. When using the method in \texttt{benchmarkADinLoop} we almost achieve the same test results as ForwardAutoDiff. Although, what is important to mention here is that with the approach in \texttt{benchmarkADinLoop} we only obtain the gradient of the function and not the Jacobian. In the particular case of the function f in \eqref{eq:benchmarkFunction}, the Jacobian will only be a diagonal matrix with the gradient of $f$ on the diagonal, but if we would evaluate a function like in \eqref{eq:differenceFunction}, this approach would not work. Hence although we almost manage to obtain the same performance in ForwardDiff as we have in ForwardAutoDiff, it comes with a cost that some type of functions cannot be evaluated. The implementation necessary to work around this and obtain the Jacobian with ForwardDiff and \texttt{benchmarkADinLoop} will slow the computation down and for a vector function with large input vectors, ForwardAutoDiff is a better approach. 
+We can start by observing that the ForwardAutoDiff implementation is clearly not optimized for evaluating the vector function scalar by scalar as it is the slowest method we have tested so far for all vector lengths. The next interesting observation is that we can make ForwardDiff's evaluation of the vector function much more efficient. When using the method in \texttt{benchmarkADinLoop} we almost achieve the same test results as ForwardAutoDiff. Although, what is important to mention here is that with the approach in \texttt{benchmarkADinLoop} we only obtain the gradient of the function and not the Jacobian. In the particular case of the function f in \eqref{eq:benchmarkFunction}, the Jacobian will only be a diagonal matrix with the gradient of $f$ on the diagonal, but if we would evaluate a function like in \eqref{eq:differenceFunction}, this approach would not work. Hence although we almost manage to obtain the same performance in ForwardDiff as we have in ForwardAutoDiff, it comes with a cost that some type of functions cannot be evaluated. The implementation necessary to work around this and obtain the Jacobian with ForwardDiff and \texttt{benchmarkADinLoop} will slow the computation down and for a vector function with large input vectors, ForwardAutoDiff is a better approach. 
 
-Other than this, what is interesting to see is that the evaluation of the analytical solution in a loop is faster than the vectorised. Here Julia shows a real strength compared to MATLAB where a function evaluation like for the vector function f will be much slower in a loop than vector multiplication.
+Other than this, what is interesting to see is that the evaluation of the analytical solution in a loop is faster than the vectorized. Here Julia shows a real strength compared to MATLAB where a function evaluation like for the vector function f will be much slower in a loop than vector multiplication.
 \begin{figure}[htb]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/benchmark_matlab_multiplication.pdf}
@@ -91,13 +91,13 @@ To compare different AD implementations in Julia and MATLAB I have implemented M
 
 The example consist of modelling how the pressure drops within a rectangular reservoir measuring $200\times 200 \times 50 \text{m}^3$ when we have a well that that is producing oil. That it is a single-phase solver only means that we do not have different phases of fluid, like liquid and gas, present during the simulation. As the purpose of this example is to compare the AD tools in MATLAB and Julia and not the process of solving the problem including setting up the grid and other necessary variables, some of the initialization and plotting have been performed in Julia by calling code from MRST. This has been done by using the package MATLAB.jl \emph{\citep{MATLAB.jl}}. This package allows calling MATLAB functions from Julia and retrieve the output variables. This is done by the function call
 \lstinputlisting{code/mxcall.jl}
-where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G} that contains the grid properties is now a struct that have all the information on cells, facets and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{ApplicationsAD}. 
+where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G} that contains the grid properties is now a struct that have all the information on cells, facets and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{sec:ApplicationsAD}. 
 
 Next we define the properties of the rock. In an oil reservoir the oil lies inside porous rock and hence the properties of the rock will affect the flow of the oil. The amount of oil we can have inside the rock is measured as pore-volume. First we make a new variable \texttt{rock} that contains the capabilities of the rock for each cell with the function  \texttt{rock = makeRock(...)}. Then we say that in our model the rock is compressed constantly as a function of pressure and we obtain the analytic solution for the pore-volume as a function of pressure
 \begin{equation*}
     PV(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)],
 \end{equation*}
-where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock for some different pressure values are visualised in \autoref{fig:flowSolverPoreVolume}. 
+where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock for some different pressure values are visualized in \autoref{fig:flowSolverPoreVolume}. 
 
 Since we assume that the oil have a constant compressibility, the density of the oil is given as an analytic function of pressure 
 \begin{equation}
@@ -107,16 +107,17 @@ Since we assume that the oil have a constant compressibility, the density of the
 where in our case $\rho_r = 850\text{kg}/\text{m}^3$ and $c$ is a constant controlling how fast the oil is compressed. The density of the fluid as a function of pressure is plotted for some pressure values in \autoref{fig:flowSolverDensity}.
 \begin{figure}[htb]
     \centering
-    \begin{minipage}[c]{0.49\textwidth}
-        \includegraphics[width=0.9\linewidth]{figures/flow_solver_pore-volume.eps}
-        \caption{Caption1}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/flow_solver_pore-volume.eps}
+        \caption{The pore-volume of the rock in the reservoir plotted as a function of pressure}
         \label{fig:flowSolverDensity}
-    \end{minipage}
-    \begin{minipage}[c]{0.49\textwidth}
-        \includegraphics[width=0.9\linewidth]{figures/flow_solver_density.eps}
+    \end{subfigure}
+    \begin{subfigure}[t]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/flow_solver_density.eps}
+        \caption{The density of the oil in the reservoir plotted as a function of pressure}
         \label{fig:flowSolverPoreVolume}
-        \caption{\textbf{Fiks  captions og referanser så de dukker opp. Få klarhet i hva slags enhet pore-volume er(om den har, men hvis ikke bør det vel være mellom 0 og 1?). Burde den ikke være motsatt? Plass til mindre olje jo høyere trykket er.}}
-    \end{minipage}
+    \end{subfigure}
+    \caption{\textbf{Få klarhet i hva slags enhet pore-volume er(om den har, men hvis ikke bør det vel være mellom 0 og 1?). Burde den ikke være motsatt? Plass til mindre olje jo høyere trykket er.}}
 \end{figure}
 
 The initial pressure in the reservoir is calculated by solving
@@ -133,7 +134,7 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
         \label{fig:flowSolverGrid}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
+    \begin{subfigure}[t]{0.48\textwidth}
         \centering
         \includegraphics[width = \textwidth]{figures/flowSolver_gridWithWell.eps}
         \caption{Reservoir grid plotted with initial pressure and well P1. The well has replaced 8 grid elements. Some grid elements are removed to give a better visualization of the well.}
@@ -144,8 +145,30 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
 
 After initialising the grid we want to define the discrete gradient and divergence operators as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G} and in \texttt{rock} we have stored the facets permeability that will affect the flux through the facets. This gives us the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
-The matrix C in the discrete operators are created by definition \eqref{eq:discreteGradient} such that it the pressure difference between two adjacent cells. The matrix C is stored as a sparse matrix, and the reason why is clear from
-governing equations for the flow in the reservoir. We use a finite volume method to discretize in space and a backward Euler method to discretize in time. To solve the equations we use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} with the residual form $\boldsymbol{F}(\boldsymbol{x}) = 0$. If we take a look at \autoref{fig:flowSolverJacobian}, we can see the structure of the Jacobian of $\boldsymbol{F}$. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. In MRST the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
+
+\begin{wrapfigure}{r}{5.5cm}
+    \includegraphics[width=\linewidth]{figures/flowSolver_discrete_operators_C.eps}
+    \caption{Structure of discrete operator \texttt{C}.}
+    \label{fig:discreteOperatorsC}
+\end{wrapfigure}
+The matrix C in the discrete operators are created such that when it is multiplied by the pressure $p$, the the result becomes the pressure difference between two adjacent cells like defined in \eqref{eq:discreteGradient}. The matrix C is stored as a sparse matrix, and the reason why is clear from \autoref{fig:discreteOperatorsC} which shows the structure of C. The divergence operator is made using the fact that in the continuous case the gradient operator is the adjoint of the divergence operator
+\begin{equation*}
+    \int_\Omega p\nabla \cdot \textbf{v} d\Omega + \int_\Omega \textbf{v}\nabla p d\Omega = 0.
+\end{equation*}
+This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
+
+Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, like explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end we want all the equations we want to solve on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$ such that we can use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. First we state the continuous version of the equation and then the discrete. We start by Darcy's law
+
+\textbf{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan være lettest å få bekreftelse eventuelt rette opp på sintef.}
+\begin{equation*}
+    \frac{k}{\mu}(\nabla p - g\rho) + q = 0
+    \label{eq:pressSolverDarcy}
+\end{equation*}
+where $k$ is the permeability that we have saved in the \texttt{rock} variable and $\mu$ is the viscosity of the oil. Since we will handle the well later, the production $q$ in equation \eqref{eq:pressSolverDarcy} is zero and the corresponding discrete equation that we call \text{flux} is given by 
+
+
+
+If we take a look at \autoref{fig:flowSolverJacobian}, we can see the structure of the Jacobian of $\boldsymbol{F}$. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. In MRST the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
 
 \begin{figure}[htbp]
     \centering
