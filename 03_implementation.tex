@@ -91,11 +91,12 @@ To compare different AD implementations in Julia and MATLAB I have implemented M
 
 The example consist of modelling how the pressure drops within a rectangular reservoir measuring $200\times 200 \times 50 \text{m}^3$ when we have a well that that is producing oil. That it is a single-phase solver only means that we do not have different phases of fluid, like liquid and gas, present during the simulation. As the purpose of this example is to compare the AD tools in MATLAB and Julia and not the process of solving the problem including setting up the grid and other necessary variables, some of the initialization and plotting have been performed in Julia by calling code from MRST. This has been done by using the package MATLAB.jl \emph{\citep{MATLAB.jl}}. This package allows calling MATLAB functions from Julia and retrieve the output variables. This is done by the function call
 \lstinputlisting{code/mxcall.jl}
+where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia we can use MRST's \texttt{computeGeometry(G)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable $G$ that contains the grid properties is now a struct that have all the information on cells, facets and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{ApplicationsAD}. 
 
-The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The initial pressure is calculated by solving
+Next we define the properties of the rock. In a oil reservoir the oil lies inside porous rock The initial pressure in the reservoir is calculated by solving
 \begin{equation*}
     \frac{dp}{dz} = g\cdot \rho(p), \quad p(z = 0) = p_r = 200\text{bar} 
-\end{equation*}
+\end{equation*}  
 for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$ for some reference constant $\rho_r$ and $c$. The well is then inserted by removing 8 grid elements. The grid with initial pressure and well can be seen in \autoref{fig:flowSolverGridWithWell}.
 \begin{figure}[htbp]
     \centering
