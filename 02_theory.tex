@@ -118,6 +118,7 @@ The weakness of implementing AD with dual numbers is clear for functions with mu
 $7$ is now the function value of $f$, while $3$ is the derivative value of $f$ with respect to $x$, $f_x$. To obtain $f_y$ and $f_z$ we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers - when the function evaluated have $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
 
 \subsection{Backward Automatic Differentiation}
+\label{sec:BackwardAD}
 The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where Backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
 \begin{equation}
     \label{eq:chainRule}
@@ -240,11 +241,11 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
 The forward AD method described above will be similar for a vector function as it was for a scalar function above, but there will be two differences in particular. The first one is that the primal variables needs to be initialised with their Jacobians and not just a gradient vector. The Jacobian for a primary variable of dimension $n$ will be the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
 
 \section{Applications of Automatic Differentiation}
-AD can be used in a wide spectre of applications, but one simple application of AD is if you want to find the roots of a function. The simplest example is for a scalar function $f$ with a scalar input $x$ then the iteration scheme
+AD can be used in a wide spectre of applications, but in common for them all is that we have a function, vector or scalar, we either want to minimise or find the roots of. The simplest example for finding roots is for a scalar function $f$ with a scalar input $x$. Then the iteration scheme
 \begin{equation*}
     x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)},
 \end{equation*}
-for an initial $x_0$, will converge to a root of $f$ given that it satisfies the assumptions made in the derivation of the formulae. This is called the Newton-Raphson method \textbf{is it necessary to have reference here?}. With AD this is super easy as you only have to define the function $f(x)$ and then the AD finds $f'(x)$ automatically and you can use the Newton Raphson method directly. Exactly the same approach can be used to solve linear systems in multiple dimensions. Let us look at the linear system 
+for an initial $x_0$, will converge to a root of $f$ given that it satisfies the assumptions made in the derivation of the formulae. This is called the Newton-Raphson method \textbf{is it necessary to have reference here? If so what kind of?}. With AD this is super easy as you only have to define the function $f(x)$ and then the AD finds $f'(x)$ automatically and you can use the Newton-Raphson method directly. Exactly the same approach can be used to solve linear systems in multiple dimensions. Let us look at the linear system 
 \begin{equation}
     \textbf{A}\boldsymbol{x} = \textbf{b}.
     \label{eq:linearSystem}
@@ -258,12 +259,12 @@ This means that to solve the linear system in equation \eqref{eq:linearSystem}, 
 	\boldsymbol{x}^{n+1} = \boldsymbol{x}^n - \left[J_{\boldsymbol{F}}  (\boldsymbol{x}^n)\right]^{-1} \boldsymbol{F}(\boldsymbol{x}^n).
     \label{eq:newtonRaphsonVector}
 \end{equation}
-Here $\left[J_{\boldsymbol{F}}  (\boldsymbol{x}^n)\right]^{-1}$ is the inverse of the Jacobian of $\boldsymbol{F}$ at $\boldsymbol{x}^n$. For a simple linear system like equation \eqref{eq:linearSystem} it may seem a bit forced and not necessary to make the effort to use AD to solve for $\boldsymbol{x}$. But for numerical application we can with this method easily solve non-linear equations by looking at the residual form and use the Newton-Raphson method \eqref{eq:newtonRaphsonVector} with AD. Consider the Poisson equation
+Here $\left[J_{\boldsymbol{F}}  (\boldsymbol{x}^n)\right]^{-1}$ is the inverse of the Jacobian of $\boldsymbol{F}$ at $\boldsymbol{x}^n$. For a simple linear system like equation \eqref{eq:linearSystem} it may seem a bit forced and not necessary to make the effort to use AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver instead. But for numerical application we can with this method easily solve non-linear equations that we obtain from the PDEs by looking at the residual form of the equations we obtain and use the Newton-Raphson method \eqref{eq:newtonRaphsonVector} with AD. As a preface to introducing how we will do this, consider the Poisson equation
 \begin{equation}
     -\nabla(\textbf{K}\nabla u) = q,
     \label{eq:Poisson}
 \end{equation}
-where \textbf{K} is an diffusion coefficient and we want to find $u$ on $\Omega \in \Re^d$. Numerically this can be done by using a finite volume method. This approach is based on applying conservation laws inside the domain. By dividing the domain into smaller cells $\Omega_i$ we can, instead of looking at the Poisson equation in differential form integrate it on each cell such that
+where \textbf{K} is an diffusion coefficient and we want to find $u$ on $\Omega \in \Re^d$. Numerically this can be done by using a finite volume method. This approach is based on applying conservation laws inside the domain. By dividing the domain into smaller cells, $\Omega_i$, we can instead of looking at the Poisson equation in differential form, integrate it on each cell such that
 \begin{equation}
     \int_{\partial\Omega_i} - \textbf{K} \nabla u \cdot \textbf{n} ds = \int_{\Omega_i} q dA.
     \label{eq:conservation}
@@ -291,27 +292,28 @@ Here $\tilde{u}_{i,k}$ is the value of $u$ at the centre of the facet $\Gamma_{i
 \end{equation*}
 can not be computed directly. Here $\textbf{c}_{i,k}$ is the vector from $u_i$ to $\tilde{u}_{i,k}$ as seen in figure \ref{fig:gridTwoCells} . To handle this we first define what we call a transmissibility matrix where
 \begin{equation}
-    T_{i,k}(\tilde{u}_{i,k} - u_i) = L_{i,k}\textbf{K}_i\frac{(\tilde{u}_{i,k} - u_i)\textbf{c}_{i,k}}{|\textbf{c}_{i,k}|^2} \cdot \textbf{n}_{i,k}
+    T_{i,k}(\tilde{u}_{i,k} - u_i) = L_{i,k}\textbf{K}_i\frac{(\tilde{u}_{i,k} - u_i)\textbf{c}_{i,k}}{|\textbf{c}_{i,k}|^2} \cdot \textbf{n}_{i,k}.
     \label{eq:transmissibility}
 \end{equation}
-Now we know that the amount of flux from cell $\Omega_i$ to $\Omega_k$ must be the same as from $\Omega_k$ to $\Omega_i$ only with opposite sign. This gives us the relations $v_{i,k} = -v_{k,i}$ and from figure \ref{fig:gridTwoCells} it is clear that $\tilde{u}_{i,k} = \tilde{u}_{k,i}$. Hence we have the relation 
+Because we know that the amount of flux from cell $\Omega_i$ to $\Omega_k$ must be the same as from $\Omega_k$ to $\Omega_i$ only with opposite sign. This gives us the relations $v_{i,k} = -v_{k,i}$ and from figure \ref{fig:gridTwoCells} it is clear that $\tilde{u}_{i,k} = \tilde{u}_{k,i}$. Hence we have the relation 
 \begin{equation*}
     v_{i,k} = T_{i,k}(\tilde{u}_{i,k} - u_i) \hspace{3em} -v_{i,k} = T_{k,i}(\tilde{u}_{i,k} - u_k)
 \end{equation*}
 By subtraction the two equations for $v_{k,i}$ and moving $T_{i,k}$ and $T_{k,i}$ to the other side 
 \begin{equation}
-    \begin{align*}
+    \begin{aligned}
         (T_{i,k}^{-1} + T_{k,i}^{-1}) v_{i,k} &= (\tilde{u}_{i,k} - u_i) - (\tilde{u}_{i,k} - u_k)
         \\
         v_{i,k} &= (T_{i,k}^{-1} + T_{k,i}^{-1})^{-1}(u_k - u_i) \\
         v_{i,k} &= T_{i,k}(u_k - u_i)
-    \end{align*}
+    \end{aligned}
     \label{eq:flux}
 \end{equation}
 we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the gradient of $u$. This is called the two-point flux-approximation (TPFA) \emph{\citep{lieMrstUrl}}. Now that we have an approximation of the flux through the boundary between $\Omega_i$ and $\Omega_k$ we get that equation \eqref{eq:fluxOverBoundary} can be approximated by 
-\begin{equation*}
+\begin{equation}
     \sum_k T_{i,k}(u_k - u_i) = q_i, \hspace{3em} \forall \Omega_i \in \Omega
-\end{equation*}
+    \label{eq:PoissonSolvableTwoCells}
+\end{equation}
 Where $q_i$ is the total production in cell $\Omega_i$. Now we can get a linear system of the form \textbf{A}\textbf{u} = \textbf{b},  which on residual form becomes \textbf{F}(\textbf{u}) = \textbf{A}\textbf{u} - \textbf{b} = 0 where
 \begin{align*}
     \textbf{A}_{i,j} = 
@@ -322,9 +324,9 @@ Where $q_i$ is the total production in cell $\Omega_i$. Now we can get a linear 
     \end{array}
     \right.
 \end{align*}
-Now we can solve the poisson equation \eqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. But we still end up with a linear system of equations that we may as well solve without AD. 
+This means we can solve the Poisson equation \eqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. But we still end up with a linear system of equations that we may as well solve without AD. 
 
-To show the real elegance of using AD to solve PDE's we want to create a framework where we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured grid we have. Instead of the simple two-cell grid we used in figure \ref{fig:gridTwoCells} consider a more complex grid like we have in figure \ref{fig:partialGrid}. The figure shows a part of some larger grid where we will focus on the relation between cell 5 and 8. To define the discrete divergence and gradient operators we need som information from the grid. The grid consist of three types of objects: cells, facets and nodes. The cells are each $\Omega_i \subset \Omega$ and in our two-dimensional case the facets are simply the lines between each cell. The nodes are defined points based on the method we use where we want to find the value of the function we search. In the case of figure \ref{fig:gridTwoCells} we had two nodes, $u_i$ and $u_k$. Each cell and facet has physical properties like area or length and centroid or centre. The facets also has a normal vector. \autoref{fig:partialGrid} shows how we have two different mappings that explains the relation between the cells and the facets. The first mapping $F(c)$ is mapping from cell $c$ to facet $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
+To show the real elegance of using AD to solve PDE's we want to create a framework where we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured grid we have. Instead of the simple two-cell grid we used in figure \ref{fig:gridTwoCells} consider a more complex grid like we have in figure \ref{fig:partialGrid}. The figure shows a part of some larger grid. To define the discrete divergence and gradient operators we need some information about the topology of the grid. The grid consist of three types of objects: cells, facets and nodes. The cells are each $\Omega_i \subset \Omega$ and in our two-dimensional case the facets are simply the lines between each cell. The nodes are defined points based on the method we use where we want to find the value of the function we search. In the case of figure \ref{fig:gridTwoCells} we had two nodes, $u_i$ and $u_k$. Each cell and facet has physical properties like area or length and centroid or centre. The facets also has a normal vector. \autoref{fig:partialGrid} shows how we have two different mappings that explains the relation between the cells and the facets where the values dependent on cell 5 and 8 are written out. The first mapping $F(c)$ is mapping from cell $c$ to facet $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
 \begin{figure}[htb]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_cells_facets.pdf}
@@ -332,7 +334,7 @@ To show the real elegance of using AD to solve PDE's we want to create a framewo
     \label{fig:partialGrid}
 \end{figure}
 
-Our goal now is to, based on the grid properties, create the divergence and gradient operators, corresponding to this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the gradient operator for a facet $f$ is defined as 
+We now have all the physical properties of the grid we used to attain the formulae in equation \eqref{eq:PoissonSolvableTwoCells}, but now we want to create discrete divergence and gradient operators that corresponds to the continuous equivalents for this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the gradient operator for a facet $f$ is defined as 
 \begin{equation*}
     \texttt{gradient}(u)[f] = u[C_2(f)] - u[C_1(f)] 
 \end{equation*}
@@ -343,17 +345,18 @@ when $u[C_i(f)]$ is the value of u at the cell corresponding to $C_i(f)$. For th
 where the function sgn($f$) is defined as 
 \begin{align*}
     \text{sgn}(f) = \left\lbrace
-    \begin{array}{rr}
-        1 \hspace{3em}& \text{if } c \in C_1(f)\\
-        -1 \hspace{3em}& \text{if } c \in C_2(f).
+    \begin{array}{rl}
+        1 \hspace{3em}&\text{if } c \in C_1(f)\\
+        -1 \hspace{3em}&\text{if } c \in C_2(f).
     \end{array}
     \right.
 \end{align*}
-Hence we can now only based on the topology of the grid create discrete divergence and gradient operators such that the Poisson equation \eqref{eq:Poisson} can be written as
-\begin{equation*}
-    \textbf{F}(\textbf{u}) = \texttt{divergence}(\textbf{v})-\textbf{q} = 0
-\end{equation*}
-with \textbf{v} = \textbf{T }\texttt{gradient}(\textbf{u}) where \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it, but for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid and although the system becomes non-linear it will be easy to solve using AD and Newton-Raphson method. An example of this can be seen in section \ref{sec:FlowSolver}.
+Hence we can now, only based on the topology of the grid, create discrete divergence and gradient operators such that the discrete Poisson equations we want to solve, can now be written very similar as for the continuous case:
+\begin{align*}
+    -\nabla(\textbf{K}\nabla u) - q &= 0 \\
+    \textbf{F}(\textbf{u}) = \texttt{divergence}(\textbf{T }\texttt{gradient}(\textbf{u}))-\textbf{q} &= 0.
+\end{align*}
+Here \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations are to the continuous equation. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it, but for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid and although the system becomes non-linear it will be easy to solve using AD and Newton-Raphson method. An example of this can be seen in section \ref{sec:FlowSolver}.
 
  
 
