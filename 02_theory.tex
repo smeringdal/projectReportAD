@@ -336,9 +336,10 @@ To show the real elegance of using AD to solve PDE's we want to create a framewo
 \end{figure}
 
 We now have all the physical properties of the grid we used to attain the formulae in equation \eqref{eq:PoissonSolvableTwoCells}, but now we want to create discrete divergence and gradient operators that corresponds to the continuous equivalents for this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the gradient operator for a facet $f$ is defined as 
-\begin{equation*}
+\begin{equation}
     \texttt{gradient}(u)[f] = u[C_2(f)] - u[C_1(f)] 
-\end{equation*}
+    \label{eq:discreteGradient}
+\end{equation}
 when $u[C_i(f)]$ is the value of u at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in equation \eqref{eq:flux}. Let $v_{i,k} = v[f]$ when f is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for a cell $c$ is defined as 
 \begin{equation*}
     \texttt{divergence}(\textbf{v})[c] = \sum_{f\in f(c)} \text{sgn}(f)\textbf{v}[f]
