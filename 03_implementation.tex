@@ -95,7 +95,7 @@ where we have three input parameter and two output parameters. We have to specif
 
 Next we define the properties of the rock. In an oil reservoir the oil lies inside porous rock and hence the properties of the rock will affect the flow of the oil. The amount of oil we can have inside the rock is measured as pore-volume. First we make a new variable \texttt{rock} that contains the capabilities of the rock for each cell with the function  \texttt{rock = makeRock(...)}. Then we say that in our model the rock is compressed constantly as a function of pressure and we obtain the analytic solution for the pore-volume as a function of pressure
 \begin{equation*}
-    PV(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)],
+    pv(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)],
 \end{equation*}
 where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock for some different pressure values are visualized in \autoref{fig:flowSolverPoreVolume}. 
 
@@ -159,13 +159,20 @@ This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence th
 
 Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, like explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end we want all the equations we want to solve on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$ such that we can use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. First we state the continuous version of the equation and then the discrete. We start by Darcy's law
 
-\textbf{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan være lettest å få bekreftelse eventuelt rette opp på sintef.}
+\textbf{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan hende det er lettest å få bekreftelse eventuelt rette opp på sintef.}
 \begin{equation*}
     \frac{k}{\mu}(\nabla p - g\rho) + q = 0
     \label{eq:pressSolverDarcy}
 \end{equation*}
 where $k$ is the permeability that we have saved in the \texttt{rock} variable and $\mu$ is the viscosity of the oil. Since we will handle the well later, the production $q$ in equation \eqref{eq:pressSolverDarcy} is zero and the corresponding discrete equation that we call \text{flux} is given by 
-
+\lstinputlisting{code/flux.jl}
+Here T is the transmissibilities that contain $k$ and the properties of the grid and we take the average of $\rho$ for the two adjacent cells that we compute the gradient for. \texttt{gradz} is \textbf{Skjønner ikke hva denne er. Sett inn senere.}. When \texttt{flux} is defined, we define the continuity equation in the continuous case
+\begin{equation*}
+    \frac{d}{dt}p + \nabla\cdot(\rho\nabla p) = 0.
+\end{equation*}
+In the corresponding discrete case we get the function
+\lstinputlisting{code/presEq.jl}
+\textbf{Her falt jeg litt av. Det gjenstår å få disse riktig, samt likningene under om relevant:}
 
 
 If we take a look at \autoref{fig:flowSolverJacobian}, we can see the structure of the Jacobian of $\boldsymbol{F}$. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. In MRST the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
