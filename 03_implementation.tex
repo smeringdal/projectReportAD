@@ -93,7 +93,15 @@ The example consist of modelling how the pressure drops within a rectangular res
 \lstinputlisting{code/mxcall.jl}
 where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia we can use MRST's \texttt{computeGeometry(G)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable $G$ that contains the grid properties is now a struct that have all the information on cells, facets and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{ApplicationsAD}. 
 
-Next we define the properties of the rock. In a oil reservoir the oil lies inside porous rock The initial pressure in the reservoir is calculated by solving
+Next we define the properties of the rock. In a oil reservoir the oil lies inside porous rock \begin{minipage}[c]{0.45\textwidth}
+Text here
+\end{minipage}
+\begin{minipage}[c]{0.45\textwidth}
+\includegraphics[width=0.4\textwidth]{figures/}
+\caption{}
+\label{fig:Er_Nor}
+\end{minipage}
+The initial pressure in the reservoir is calculated by solving
 \begin{equation*}
     \frac{dp}{dz} = g\cdot \rho(p), \quad p(z = 0) = p_r = 200\text{bar} 
 \end{equation*}  
