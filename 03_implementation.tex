@@ -175,11 +175,21 @@ In the corresponding discrete case we get the function
 \textbf{Her falt jeg litt av. Det gjenstår å få disse riktig, samt likningene under om relevant:}
 \lstinputlisting{code/press_solver_rest.jl}
 
-When all the governing equations are defined we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here $\boldsymbol{x}\in\Re^1002$ where the first 1000 elements are the pressure at the different nodes, element 1001 will be \texttt{bhp} and element 1002 \texttt{qS}. Now if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method. A pseudo code of how we solve the system can be seen below.
+When all the governing equations are defined we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here $\boldsymbol{x}\in\Re^1002$ where the first 1000 elements are the pressure at the different nodes, element 1001 will be \texttt{bhp} and element 1002 \texttt{qS}. Now if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
+\lstinputlisting{code/press_solver_main_loop.jl}
+If we simulate how the pressure in the reservoir will decay during one year, we will get the result displayed in \autoref{fig:flowSolverResult}.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width = 0.9\textwidth]{figures/flowSolver_result.eps}
+    \caption{The pressure in the Reservoir displayed at four different times.}
+    \label{fig:flowSolverResult}
+\end{figure}
+We can see how the reservoir from the beginning being approximately 200bar everywhere begins with the largest pressure decay close to the well, but after some time the oil moves towards the well and the pressure decays also furthest away from the well as well. 
 
 
+When it comes to solving the equations with the Newton-Raphson method, it is interesting to have a look at how the Jacobian of $\boldsymbol{F}$ looks like. \autoref{fig:flowSolverJacobian} shows the structure of the Jacobian. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. ForwardAutoDiff and MRST's implementation of AD, the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
 
-If we take a look at \autoref{fig:flowSolverJacobian}, we can see the structure of the Jacobian of $\boldsymbol{F}$. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. In MRST the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
+\textbf{Videre arbeid: kommentere litt om hastighetsforskjellene med de forskjellige metodene. Legge til production rate og pressure decay-graf samt kommentere.}
 
 \begin{figure}[htbp]
     \centering
