@@ -69,7 +69,7 @@ Implementation specific parts are left out. The result can be seen in \autoref{f
 \begin{figure}[htb]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/benchmark_ad_in_loop.pdf}
-    \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors. \textbf{TODO: få plottene som tilhører samme metode i samme farge}}
+    \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors. \todo[inline]{få plottene som tilhører samme metode i samme farge}}
     \label{fig:adInLoop}
 \end{figure}
 We can start by observing that the ForwardAutoDiff implementation is clearly not optimized for evaluating the vector function scalar by scalar as it is the slowest method we have tested so far for all vector lengths. The next interesting observation is that we can make ForwardDiff's evaluation of the vector function much more efficient. When using the method in \texttt{benchmarkADinLoop} we almost achieve the same test results as ForwardAutoDiff. Although, what is important to mention here is that with the approach in \texttt{benchmarkADinLoop} we only obtain the gradient of the function and not the Jacobian. In the particular case of the function f in \eqref{eq:benchmarkFunction}, the Jacobian will only be a diagonal matrix with the gradient of $f$ on the diagonal, but if we would evaluate a function like in \eqref{eq:differenceFunction}, this approach would not work. Hence although we almost manage to obtain the same performance in ForwardDiff as we have in ForwardAutoDiff, it comes with a cost that some type of functions cannot be evaluated. The implementation necessary to work around this and obtain the Jacobian with ForwardDiff and \texttt{benchmarkADinLoop} will slow the computation down and for a vector function with large input vectors, ForwardAutoDiff is a better approach. 
@@ -97,7 +97,7 @@ Next we define the properties of the rock. In an oil reservoir the oil lies insi
 \begin{equation*}
     pv(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)],
 \end{equation*}
-where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock for some different pressure values are visualized in \autoref{fig:flowSolverPoreVolume}. 
+where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock as a function of pressure values are visualized in \autoref{fig:flowSolverPoreVolume}. 
 
 Since we assume that the oil have a constant compressibility, the density of the oil is given as an analytic function of pressure 
 \begin{equation}
@@ -117,7 +117,7 @@ where in our case $\rho_r = 850\text{kg}/\text{m}^3$ and $c$ is a constant contr
         \caption{The density of the oil in the reservoir plotted as a function of pressure}
         \label{fig:flowSolverPoreVolume}
     \end{subfigure}
-    \caption{\textbf{Få klarhet i hva slags enhet pore-volume er(om den har, men hvis ikke bør det vel være mellom 0 og 1?). Burde den ikke være motsatt? Plass til mindre olje jo høyere trykket er.}}
+    \caption{\todo[inline]{Få klarhet i hva slags enhet pore-volume er(om den har, men hvis ikke bør det vel være mellom 0 og 1?). Burde den ikke være motsatt? Plass til mindre olje jo høyere trykket er.}}
 \end{figure}
 
 The initial pressure in the reservoir is calculated by solving
@@ -159,20 +159,20 @@ This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence th
 
 Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, like explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end we want all the equations we want to solve on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$ such that we can use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. First we state the continuous version of the equation and then the discrete. We start by Darcy's law
 
-\textbf{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan hende det er lettest å få bekreftelse eventuelt rette opp på sintef.}
+\todo[inline]{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan hende det er lettest å få bekreftelse eventuelt rette opp på sintef.}
 \begin{equation*}
     \frac{k}{\mu}(\nabla p - g\rho) + q = 0
     \label{eq:pressSolverDarcy}
 \end{equation*}
 where $k$ is the permeability that we have saved in the \texttt{rock} variable and $\mu$ is the viscosity of the oil. Since we will handle the well later, the production $q$ in equation \eqref{eq:pressSolverDarcy} is zero and the corresponding discrete equation that we call \text{flux} is given by 
 \lstinputlisting{code/flux.jl}
-Here T is the transmissibilities that contain $k$ and the properties of the grid and we take the average of $\rho$ for the two adjacent cells that we compute the gradient for. \texttt{gradz} is \textbf{Skjønner ikke hva denne er. Sett inn senere.}. When \texttt{flux} is defined, we define the continuity equation in the continuous case
+Here T is the transmissibilities that contain $k$ and the properties of the grid and we take the average of $\rho$ for the two adjacent cells that we compute the gradient for. \texttt{gradz} is\todo{Skjønner ikke hva denne er. Sett inn senere.}... When \texttt{flux} is defined, we define the continuity equation in the continuous case
 \begin{equation*}
     \frac{d}{dt}p + \nabla\cdot(\rho\nabla p) = 0.
 \end{equation*}
 In the corresponding discrete case we get the function
 \lstinputlisting{code/presEq.jl}
-\textbf{Her falt jeg litt av. Det gjenstår å få disse riktig, samt likningene under om relevant:}
+\todo[inline]{Her falt jeg litt av. Det gjenstår å få disse riktig, samt likningene under om relevant:}
 \lstinputlisting{code/press_solver_rest.jl}
 
 When all the governing equations are defined we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here $\boldsymbol{x}\in\Re^1002$ where the first 1000 elements are the pressure at the different nodes, element 1001 will be \texttt{bhp} and element 1002 \texttt{qS}. Now if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
@@ -189,7 +189,7 @@ We can see how the reservoir from the beginning being approximately 200bar every
 
 When it comes to solving the equations with the Newton-Raphson method, it is interesting to have a look at how the Jacobian of $\boldsymbol{F}$ looks like. \autoref{fig:flowSolverJacobian} shows the structure of the Jacobian. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals (can look like 5 from perspective) with nonzero elements and the rest of the elements are 0. As we also can see from the figure, there are only 6419 non-zero elements out of more than 1 million. It is clear that storing the full $1002\times 1002$ matrix will be very inefficient. ForwardAutoDiff and MRST's implementation of AD, the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example this is much more efficient than storing the full $1002\times 1002$ Jacobian as ForwardDiff does.
 
-\textbf{Videre arbeid: kommentere litt om hastighetsforskjellene med de forskjellige metodene. Legge til production rate og pressure decay-graf samt kommentere.}
+\todo[inline]{Videre arbeid: kommentere litt om hastighetsforskjellene med de forskjellige metodene. Legge til production rate og pressure decay-graf samt kommentere.}
 
 \begin{figure}[htbp]
     \centering
