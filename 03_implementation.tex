@@ -182,7 +182,7 @@ In addition, we need a few equations to represent the flow inside the wellbore. 
 \begin{equation*}
 p_c = p_{bh} + g (z_c - z_{bhp})\rho.    
 \end{equation*}
-In the discrete case this is given by the function \texttt{p_conn}
+In the discrete case this is given by the function \texttt{pconn}
 \lstinputlisting{code/p_conn.jl}
 The pressure drop near the well usually takes place on a much shorter length scale than the size of a grid cell, and is usually modelled through a semi-analytical expression that relates flow rate to the difference between the reservoir and wellbore pressures. Hence the analytic expression for the production in a perforated cell is given by
 \begin{equation*}
@@ -193,7 +193,7 @@ The pressure drop near the well usually takes place on a much shorter length sca
 
 \lstinputlisting{code/rateEq.jl}
 To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given
-\lstinputlisting{code/ctrlEq.jl}
+\lstinputlisting{code/qtrlEq.jl}
 
 When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate\texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
 \lstinputlisting{code/press_solver_main_loop.jl}
