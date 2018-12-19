@@ -162,9 +162,10 @@ By substituting $s$ with $g_3$ gives
     \frac{\partial g_3}{\partial x} &= \exp(2x)\cdot 1 + 2\cdot\exp(2x)\cdot x = (1 + 2x)\exp(2x),\\
 \end{align*}
 hence we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of $f$ compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z(\sin(x^2)+yx)$ and 
-\begin{equation*}
+\begin{equation}
     g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
-\end{equation*}
+    \label{eq:DependencyBackwardAD}
+\end{equation}
 Now the derivatives from the chain rule in equation \eqref{eq:chainRuleReverse} becomes \\
 \begin{multicols}{3}
     \noindent
@@ -206,10 +207,9 @@ The calculation of the derivatives together with a dependency graph can be seen 
 \begin{figure}[htbp]
 	\centering
 	    \includegraphics[width=0.9\textwidth]{figures/dependency_graph_backward_AD.pdf}
-	    \caption{caption}
+	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-\todo[inline]{Write caption}
 Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that when we implement this, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function- and the derivative values as we did in forward AD. This means that we have to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
