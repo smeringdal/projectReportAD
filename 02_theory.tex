@@ -206,7 +206,7 @@ The calculation of the derivatives together with a dependency graph can be seen 
 \begin{figure}[htbp]
 	\centering
 	    \includegraphics[width=0.9\textwidth]{figures/dependency_graph_backward_AD.pdf}
-	    \caption{NOT A FINISHED FIGURE. Just a quick sketch of the idea I have of visualising the process of backward AD as i felt it got a bit messy with all the expressions. Gladly receiving comments on the thought/suggestions to make it more clear}
+	    \caption{\todo{Write caption}}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
 Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that when we implement this, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function- and the derivative values as we did in forward AD. This means that we have to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
