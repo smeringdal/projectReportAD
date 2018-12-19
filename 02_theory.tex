@@ -161,7 +161,7 @@ By substituting $s$ with $g_3$ gives
     \frac{\partial g_3}{\partial g_1} &= \exp(2x)\cdot x\\
     \frac{\partial g_3}{\partial x} &= \exp(2x)\cdot 1 + 2\cdot\exp(2x)\cdot x = (1 + 2x)\exp(2x),\\
 \end{align*}
-hence we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of f compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z(\sin(x^2)+yx)$ and 
+hence we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of $f$ compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z(\sin(x^2)+yx)$ and 
 \begin{equation*}
     g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
 \end{equation*}
