@@ -31,7 +31,7 @@ Another advantage of Julia's multiple dispatch system is clear if we look at how
 which would indeed work, but to exploit Julia's multiple dispatch fully, we can instead overload the \texttt{iterate} function. This function explains how we shall iterate through an AD variable. 
 \lstinputlisting{code/iterate.jl}
 Now, the built-in \texttt{sum} function will work on AD variables since it knows how to iterate through the variable and when it adds up the values, the + operator we defined above is being used. And not only that! All built-in functions that iterate through the input will also work (given that the functions they use on the variable also are overloaded). As an example, if we now overload the elementary operation /, the Base function \texttt{mean} will also work on AD variables.
-
+\todo[inline]{Write about the dot-operator \cite{JuliaIssueDot}}
 \section{Benchmark of Automatic Differentiation}
 As mentioned in \autoref{sec:Julia}, Julia already has an AD library called ForwardDiff \emph{\citep{ForwardDiff}} that uses forward AD. Hence, it would be interesting to see how the two implementations compare when the functions evaluated are getting larger. As another reference, I have added the AD implementation in the MATLAB Reservoir Simulation Toolbox (MRST) \emph{\citep{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
 \begin{equation}
@@ -96,9 +96,10 @@ The example consist of modelling how the pressure drops within a rectangular res
 where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G} that contains the grid properties is now a structured array (struct) that has all the information on cells, facets, vertices and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{sec:ApplicationsAD}. 
 
 Next, we define the properties of the rock. In an oil reservoir, the oil lies inside porous rock and hence the properties of the rock will affect the flow of the oil. The amount of oil we can have inside the rock is measured as pore volume. First, we make a new variable \texttt{rock} that contains parameters that describe the rock's ability to store and trasmit fluids for each cell with the function  \texttt{rock = makeRock(...)}. Then we say that in our model the rock is compressed constantly as a function of pressure and we obtain the analytic solution for the pore-volume as a function of pressure
-\begin{equation*}
+\begin{equation}
     pv(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)],
-\end{equation*}
+    \label{eq:poreVolume}
+\end{equation}
 where pv$_r$ is the rock pore-volume properties in a cell at a reference pressure $p_r$ and $c_r$ is a constant controlling how the rock is compressed. The pore-volume of the rock as a function of pressure values are visualized in \autoref{fig:flowSolverPoreVolume}. The graph shows that for a cell with volume $1000\text{m}^3$ there is approximately room for $600\text{m}^3$ oil.
 
 Since we assume that the oil have a constant compressibility, the density of the oil is given as an analytic function of pressure 
@@ -145,7 +146,7 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
     \caption{}
 \end{figure}
 
-After initialising the grid we want to define the discrete gradient and divergence operators as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
+After initializing the grid we want to define the discrete gradient and divergence operators as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 
 \begin{wrapfigure}{r}{5.5cm}
@@ -169,16 +170,30 @@ Now, we have all the ingredients to set up the governing equations for the flow 
 Here, $k$ is the permeability that we have saved in the \texttt{rock} variable and $\mu$ is the viscosity of the oil.
 The corresponding discrete equation that we call \text{flux} is given by 
 \lstinputlisting{code/flux.jl}
-Here, T is the transmissibilities that contain $k$ and the properties of the grid. Since two adjacent cells can have different values of $\rho$, we use the  average for the two cells. \texttt{gradz} is the gradient of the cell centroid's $z$-value. When \texttt{flux} is defined, we define the continuity equation in the continuous case
+Here, T is the transmissibilities that contain $k$ and the properties of the grid. Since two adjacent cells can have different values of $\rho$, we use the  average for the two cells. \texttt{gradz} is the gradient of the cell centroid's $z$-value. This makes sure that if the cells lie next to each other in the horizontal plane, the flux will not depend on $g$. When \texttt{flux} is defined, we define the continuity equation in the continuous case
 \begin{equation*}
-    \frac{\partial}{\partial t}(\phi\rho)(p) + \nabla\cdot(\rho\vec{v}) = q.
+    \frac{\partial}{\partial t}(\phi\rho)(p) + \nabla\cdot(\rho\vec{v}) = q,
 \end{equation*}
-Since we will handle the well later, the source term $q$ representing injection or production fluids is set to zero.
-In the corresponding discrete case we get the function
+where $\phi$ is the porosity of the rock. Since we will handle the well later, the source term $q$ representing injection or production fluids is set to zero. In the corresponding discrete case we get the function
 \lstinputlisting{code/presEq.jl}
-\todo[inline]{Her falt jeg litt av. PresEq cont må være noe annet. Det gjenstår å få disse riktig, samt likningene under om relevant:}
-In addition, we need a few equations to represent the flow inside the wellbore. The standard model is to assume that the pressure is in hydrostatic equilibrium inside the wellbore, so that the pressure in a perforated cell (i.e., a cell in which the wellbore is open to the reservoir rock) is given as a hydrostatic difference from the pressure at a datum point (the bottom-hole pressure), typically give at the top of the reservoir. That is, $p_c= p_{bh} + g (z_c - z_{bhp})\rho$. The pressure drop near the well usually takes place on a much shorter length scale than the size of a grid cell, and is usually modelled through a semi-analytical expression that relates flow rate to the difference between the reservoir and wellbore pressures, $q = (\rho\mbox{WI}/\mu)(p_c - p_r)$. To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given
-\lstinputlisting{code/press_solver_rest.jl}
+where \texttt{pv} is the pore-volume of the rock given in Equation \eqref{eq:poreVolume} and $p0$ is the pressure at the previous time step. 
+
+In addition, we need a few equations to represent the flow inside the wellbore. This flow will be the production term $q$ we ignored in the derivation of the \texttt{presEq} function. The standard model is to assume that the pressure is in hydrostatic equilibrium inside the wellbore, so that the pressure in a perforated cell (i.e., a cell in which the wellbore is open to the reservoir rock) is given as a hydrostatic difference from the pressure at a datum point (the bottom-hole pressure), typically given at the top of the reservoir. That is, the pressure in a perforated cell $c$ is given by
+\begin{equation*}
+p_c = p_{bh} + g (z_c - z_{bhp})\rho.    
+\end{equation*}
+In the discrete case this is given by the function \texttt{p_conn}
+\lstinputlisting{code/p_conn.jl}
+The pressure drop near the well usually takes place on a much shorter length scale than the size of a grid cell, and is usually modelled through a semi-analytical expression that relates flow rate to the difference between the reservoir and wellbore pressures. Hence the analytic expression for the production in a perforated cell is given by
+\begin{equation*}
+    q = (\rho\mbox{WI}/\mu)(p_c - p_r)
+\end{equation*}
+
+\lstinputlisting{code/q_conn.jl}
+
+\lstinputlisting{code/rateEq.jl}
+To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given
+\lstinputlisting{code/ctrlEq.jl}
 
 When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate\texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
 \lstinputlisting{code/press_solver_main_loop.jl}
