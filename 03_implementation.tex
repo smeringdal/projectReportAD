@@ -24,14 +24,16 @@ Now we need to implement operators for this type of struct. The importance of th
 This is clearly not a suitable way to implement AD and should be avoided. Lie and Neidinger suggests in \emph{\citep{lieMrstUrl}} and \emph{\citep{doi:10.1137/080743627}} a much more elegant implementation where instead of making new functions that take in AD-variables as parameters, one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). In Julia this can be done by exploiting the fact that Julia has \emph{multiple dispatch}. A quick explanation that satisfies our needs is that at runtime, the compiler understands what types are given as input for either a operator or a function and chooses the correct method based on this. This is done by implementing a function \lstinputlisting{code/overload_plus_operator_AD.jl} 
 that overloads the + operator. Here, we import the + operator from Base (which is where the standard functions in Julia lie) and overload it for AD variables. This means that it is only when there are AD variables on both sides of the operator that this implementation is used. Hence, if I declare $x = 1$, $y = 3$ and then $z = x+y$, Julia understands that it is not the definition above, but the normal addition for integers it should use. But if we declare $x,y = \texttt{initialize\_AD}(1,3)$ such that $x$ and $y$ both are AD variables, then when we write $z = x+y$, Julia's multiple dispatch will understand that it is our definition of the "+" operator that is meant to be used. What we need to remember is that if I now write $z = x + 3$, with $x$ as an AD variable, Julia will deploy an error message. This is because we also have to implement
 \lstinputlisting{code/overload_plus_operator_number.jl}
-Here, the first function will be used if the + operator is used with an AD variable on the left hand side and a number on the right. The last line is a compact way of writing the opposite function which will be used when the number is on the right hand side. But as you can see, we do not implement the same thing twice, we use the function we already have made. When we have implemented all the function necessary it gives us the opportunity for the function $f$ above to only write $f = y+\exp(2*x*y)$ and Julia will understand that it is our implementation of +, * and exp that shall be used, and $f$ will become an AD-variable with the correct value and derivatives. 
+Here, the first function will be used if the + operator is used with an AD variable on the left hand side and a number on the right. The last line is a compact way of writing the opposite function which will be used when the number is on the right hand side. But as you can see, we do not implement the same thing twice, we use the function we already have made. When we have implemented all the function necessary it gives us the opportunity for the function $f$ above to simply write $f = y+\exp(2*x*y)$ and Julia will understand that it is our implementation of +, * and exp that shall be used, and $f$ will become an AD-variable with the correct value and derivatives. 
 
-Another advantage of Julia's multiple dispatch system is clear if we look at how we can overload the \texttt{sum} function. One might think that we would try something like
+Up until now we have only talked about implementation of AD for scalar variables. But another advantage of Julia's multiple dispatch system is clear if we start looking at vector variables and functions. Because in some situations, like in \autoref{sec:FlowSolver}, we want to sum over all the elements in the vector. If we look at how we can overload the \texttt{sum} function one might think that we would try something like
 \lstinputlisting{code/overload_sum.jl}
 which would indeed work, but to exploit Julia's multiple dispatch fully, we can instead overload the \texttt{iterate} function. This function explains how we shall iterate through an AD variable. 
 \lstinputlisting{code/iterate.jl}
 Now, the built-in \texttt{sum} function will work on AD variables since it knows how to iterate through the variable and when it adds up the values, the + operator we defined above is being used. And not only that! All built-in functions that iterate through the input will also work (given that the functions they use on the variable also are overloaded). As an example, if we now overload the elementary operation /, the Base function \texttt{mean} will also work on AD variables.
-\todo[inline]{Write about the dot-operator \cite{JuliaIssueDot}}
+
+When we introduce AD for vectors we need to discuss how we handle multiplication and division. In mathematical programming languages like MATLAB and Julia, there is a difference between the "*" and ".*" operators. The former is regular vector multiplication, meaning if $v$ is a row vector and $u$ is a column vector, both of length $n$, then $v*u$ is the normal vector product that results in a scalar and $u*v$ gives an $n\times n$ matrix where each row is $v$ multiplied by the corresponding row value of $u$. An attempt to evaluate $u*u$ will end in an error message saying that the dimensions does not match matrix multiplication. The ".*" operator however, is the element wise multiplication operator. This means that if we have regular column vectors like $u$ and $w = v'$, the transpose of $v$, the evaluation of $u.*w$ will be element wise multiplication of $u$ and $w$, into a new vector of same dimensions as $u$ and $w$. Here is when we need to make a choice in the implementation of multiplication and division for AD in Julia, because as of now, there are no good ways of overloading any dot operators for custom types as AD will be. The Julia issue \emph{\citep{JuliaIssueDot}} from 2017 explains the problems of overloading the element wise ".*" operator and that there is no good way of actually doing this. The issue has still not been resolved. With this in mind, and that there will only be used element wise multiplication in this project, I have decided to implement "*" as element wise multiplication. This means that if I have written regular multiplication expressions consisting of at least one AD-variable, it is element wise multiplication that is being executed.
+
 \section{Benchmark of Automatic Differentiation}
 As mentioned in \autoref{sec:Julia}, Julia already has an AD library called ForwardDiff \emph{\citep{ForwardDiff}} that uses forward AD. Hence, it would be interesting to see how the two implementations compare when the functions evaluated are getting larger. As another reference, I have added the AD implementation in the MATLAB Reservoir Simulation Toolbox (MRST) \emph{\citep{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
 \begin{equation}
@@ -127,7 +129,7 @@ The initial pressure in the reservoir is calculated by solving the nonlinear ODE
 \begin{equation*}
     \frac{dp}{dz} = g\cdot \rho(p), \quad p(z = 0) = p_r = 200\text{bar} 
 \end{equation*}  
-for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$ for the same constants $\rho_r$ and $c$ as in \autoref{eq:pressureSolverDensity}. The well is then inserted by removing 8 grid elements using the \texttt{addWell(...)} function. The grid with initial pressure and well can be seen in \autoref{fig:flowSolverGridWithWell}.
+for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$ for the same constants $\rho_r$ and $c$ as in \autoref{eq:pressureSolverDensity}. The well is then inserted by removing 8 grid elements using the \texttt{W = addWell(...)} function. The grid with initial pressure and well can be seen in \autoref{fig:flowSolverGridWithWell}.
 \begin{figure}[htbp]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
@@ -162,7 +164,6 @@ This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence th
 
 Now, we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, like explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end we want all the equations we want to solve on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$ such that we can use the Newton-Raphson method described in equation \eqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. One of the advantages of defining the discrete gradient and divergence operators are that the continuous and discrete forms of the equations look very similar. Hence I will first state the continuous version of the equation and then the discrete, such that it is easy to see how similar they look. We start by defining Darcy's law which explains how the the oil will flow through the pourous rock
 
-\todo[inline]{Herfra og nedover har jeg ikke 100\% kontroll på om det jeg har skrevet er korrekt. Kan hende det er lettest å få bekreftelse eventuelt rette opp på sintef.}
 \begin{equation*}
     \vec{v} = - \frac{k}{\mu}(\nabla p - \vec{g}\rho).
     \label{eq:pressSolverDarcy}
@@ -170,11 +171,11 @@ Now, we have all the ingredients to set up the governing equations for the flow 
 Here, $k$ is the permeability that we have saved in the \texttt{rock} variable and $\mu$ is the viscosity of the oil.
 The corresponding discrete equation that we call \text{flux} is given by 
 \lstinputlisting{code/flux.jl}
-Here, T is the transmissibilities that contain $k$ and the properties of the grid. Since two adjacent cells can have different values of $\rho$, we use the  average for the two cells. \texttt{gradz} is the gradient of the cell centroid's $z$-value. This makes sure that if the cells lie next to each other in the horizontal plane, the flux will not depend on $g$. When \texttt{flux} is defined, we define the continuity equation in the continuous case
+Here, T is the transmissibilities that contain $k$ and the properties of the grid. Since two adjacent cells can have different values of $\rho$, we use the  average for the two cells. \texttt{gradz} is the gradient of the cell centroid's $z$-value. This determines how much the flux depend on $g$ given the orientation of the adjacent cells. When \texttt{flux} is defined, we define the continuity equation in the continuous case
 \begin{equation*}
     \frac{\partial}{\partial t}(\phi\rho)(p) + \nabla\cdot(\rho\vec{v}) = q,
 \end{equation*}
-where $\phi$ is the porosity of the rock. Since we will handle the well later, the source term $q$ representing injection or production fluids is set to zero. In the corresponding discrete case we get the function
+where $\phi$ is the porosity of the rock. Since we will handle the well later, the source term $q$ representing injection or production fluids is set to zero for now. In the corresponding discrete case we get the function
 \lstinputlisting{code/presEq.jl}
 where \texttt{pv} is the pore-volume of the rock given in Equation \eqref{eq:poreVolume} and $p0$ is the pressure at the previous time step. 
 
@@ -182,20 +183,20 @@ In addition, we need a few equations to represent the flow inside the wellbore. 
 \begin{equation*}
 p_c = p_{bh} + g (z_c - z_{bhp})\rho.    
 \end{equation*}
-In the discrete case this is given by the function \texttt{pconn}
+In the discrete case this is given by the function \texttt{p\_conn}
 \lstinputlisting{code/p_conn.jl}
+\todo{Riktig forstått at denne da approksimerer $\rho$ ved å ta verdien på overflaten?}
 The pressure drop near the well usually takes place on a much shorter length scale than the size of a grid cell, and is usually modelled through a semi-analytical expression that relates flow rate to the difference between the reservoir and wellbore pressures. Hence the analytic expression for the production in a perforated cell is given by
 \begin{equation*}
-    q = (\rho\mbox{WI}/\mu)(p_c - p_r)
+    q = \frac{\rho}{\mu}\mbox{WI}(p_c - p_r),
 \end{equation*}
-
+where \mbox{WI} is the properties of the rock and the oil at the applicable cell. Since this equation only apply on a few of the cells in the reservoir we also need a list of the indices \texttt{wc} for the perforated cells. These indices and the \mbox{WI} variable are given by the \texttt{W} variable we received from the \texttt{addWell} function. The discrete expression for the production in all the perforated cells are given by
 \lstinputlisting{code/q_conn.jl}
-
+The residual expression for the total production \texttt{qS} is then given by summing up all the production from each perforated cell, giving the expression \texttt{rateEq}
 \lstinputlisting{code/rateEq.jl}
-To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given
-\lstinputlisting{code/qtrlEq.jl}
-
-When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. Here, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate\texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
+Here \texttt{rhoS} is the density of the oil at the surface to obtain the total volume produced. To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given as 100bar and we get
+\lstinputlisting{code/ctrlEq.jl}
+When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. The first 1000 residual functions are the \texttt{presEq} with negative production \texttt{q\_conn} for the indices \texttt{wc}. Equation number 1001 is the \texttt{rateEq} and Equation 1002 is the \texttt{ctrlEq}. Hence, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate \texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
 \lstinputlisting{code/press_solver_main_loop.jl}
 If we simulate how the pressure in the reservoir will decay during one year, we will get the result displayed in \autoref{fig:flowSolverResult}.
 \begin{figure}[htbp]
@@ -206,7 +207,7 @@ If we simulate how the pressure in the reservoir will decay during one year, we 
 \end{figure}
 Note the different intervals for the color bar in \autoref{fig:flowSolverResult} compared to \autoref{fig:flowSolverGridWithWell}. With the current color bar interval, at initial state, the whole reservoir will be displayed red. Hence, we can see how the reservoir from the beginning being approximately 200 bar everywhere, begins with the largest pressure decay close to the well, but after some time, the oil is pushed towards the well by the pressure differences and the pressure begins to decay also furthest away from the well. 
 
-\autoref{fig:flowSolverProduction} shows the development of the production rate and the average pressure inside the reservoir. We can see how the production rate follows the average pressure inside the reservoir and that after some time it approaches zero. This phase is what is called primary production. In primary production, the pressure in the reservoir is so high that there is no need to pump the oil out, the pressure difference does all the work. After some time, we can see that the pressure becomes too low and the production decreases. When this happens, we transit to what is called secondary production. To retrieve more oil from the reservoir we need to apply extra pressure inside the reservoir. This can for example consist of injecting water or gas into the reservoir. This is called the secondary production. More details about how this work can be found in \emph{\citep{lieMrstUrl}}, but the main idea here is that to keep up the production and fully exploit the resources in the reservoir, we need to apply external pressure. And to do this in the best possible way, it is important to be able to simulate how the pressure evolves inside the reservoir. This is a simple example of how that can be done elegantly with governing equations on residual form and AD.
+\autoref{fig:flowSolverProduction} shows the development of the production rate and the average pressure inside the reservoir. We can see how the production rate follows the average pressure inside the reservoir and that after some time it approaches zero. This phase is what is called primary production. In primary production, the pressure in the reservoir is so high that there is no need to pump the oil out, the pressure difference does all the work. After some time, we can see that the pressure becomes too low and the production decreases. When this happens, we transit to what is called secondary production. To retrieve more oil from the reservoir we need to apply extra pressure inside the reservoir. This can for example consist of injecting water or gas into the reservoir. This is called the secondary production. More details about how this work can be found in \emph{\citep{lieMrstUrl}}, but the main idea here is that to keep up the production and fully exploit the resources in the reservoir, we need to apply external pressure. To do this in the best possible way, it is important to be able to simulate how the pressure evolves inside the reservoir such that we can make good decisions on which actions produce the best possible results. This is a simple example of how that can be done elegantly with governing equations on residual form and AD.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/flow_solver_production.eps}
@@ -228,12 +229,16 @@ The difference in implementation of the Jacobian should make a big impact on the
     \centering
     \caption{Table with speed benchmarks of different AD methods solving the "Single-Phase Compressible AD Solver" for different discretizations.}
     \label{tab:FlowSolverSpeedTest}
-    \begin{tabular}{cccc}
-    \textbf{Number of cells} & \textbf{ForwardDiff} & \textbf{ForwardAutoDiff} & \textbf{MRST}\\ \hline
-         $10\times10\times10$ & 71.5s & 2.3s & 1.9s \\  
-         $20\times20\times20$ & ~ & 31.9s & 23.4s \\ 
-         $30\times30\times30$ & ~ & 188.8s & 147.8s\\ \hline
+    \def\arraystretch{1.5}
+    \begin{tabular}{ccccc}
+    \textbf{Number of cells} & \textbf{ForwardDiff} & \textbf{ForwardAutoDiff} & \textbf{MRST} & $\frac{\textbf{ForwardAutoDiff}}{\textbf{MRST}}$\\
+        \hline
+         $10\times10\times10$ & 71.5s & 2.3s & 1.9s & 1.21 \\  
+         $20\times20\times20$ & ~ & 31.9s & 23.4s & 1.36\\ 
+         $30\times30\times30$ & ~ & 188.8s & 147.8s & 1.28\\ \hline
     \end{tabular}
 \end{table}
-For 10 cells in each spatial direction it is clear that what we assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true. The ForwardDiff method takes much longer time than ForwardAutoDiff and MRST. Since ForwardDiff already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. \autoref{tab:FlowSolverSpeedTest} shows that the trend with MRST being a bit faster than ForwardAutoDiff continues for finer discretizations. 
+For 10 cells in each spatial direction it is clear that what we assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true. The ForwardDiff method takes much longer time than ForwardAutoDiff and MRST. Since ForwardDiff already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. According to the results in \autoref{tab:FlowSolverSpeedTest}, MRST is a bit faster than ForwardAutoDiff. We can also see from the column farthest to the right that the ratio between time spent using MRST and ForwardAutoDiff stays approximately constant as the complexity of the problem grows. This indicates that the two different solvers scales equally, it is although not possible to say if it is the AD or the linear solver part that makes the solver in MATLAB faster than the one in Julia. 
+
+
 \todo[inline]{Er det relevant å ha med kode i Appendix? Eventuelt levere kode ved siden av?}
