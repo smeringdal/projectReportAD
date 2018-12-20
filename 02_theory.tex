@@ -69,8 +69,8 @@ After this computation, we get from the exponential
 and lastly from the product rule we get the correct tuple for $f(x)$
 \begin{align*}
     x\cdot \exp(2x) &= [ \adpair{2}{1}  ]\cdot [\adpair{\exp(4)}{ 2\cdot\exp(4)} ]\\
-    &=[ \adpair{2\cdot\exp(4)}{1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)}  ]\\
-    [f, f_x] &=[ \adpair{2\cdot\exp(4)}{5\cdot\exp(4)} ].
+    &=[\adpair{2\cdot\exp(4)}{1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)}]\\
+    [\adpair{f}{f_x}] &=[ \adpair{2\cdot\exp(4)}{5\cdot\exp(4)} ].
 \end{align*}
 This result is equal
 \begin{equation*}
@@ -369,7 +369,7 @@ Hence, we can now, only based on the topology of the grid, create discrete diver
     -\nabla(\textbf{K}\nabla u) - q &= 0 \\
     \textbf{F}(\textbf{u}) = \texttt{divergence}(\textbf{T }\texttt{gradient}(\textbf{u}))-\textbf{q} &= 0.
 \end{align*}
-Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equation. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it, but for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid and although the system becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{sec:FlowSolver}.
+Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equation. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it, but for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid and although the system becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
 
  
 
