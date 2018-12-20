@@ -60,12 +60,12 @@ and $x,y,z \in \Re^n$. \autoref{fig:benchmarkAD} shows how time spent calculatin
 \end{figure}
 In \autoref{fig:benchmarkAllADs} we have four different graphs. The analytic graph is simply the evaluation the analytic functions $f(x,y,z)$, $f_x$, $f_y$ and $f_z$. ForwardDiff is the AD package in Julia, MRST is the AD tool implemented in MATLAB and ForwardAutoDiff is the AD tool I have implemented in Julia. The first thing you observe is that ForwardDiff scales very badly as n becomes large. This is because it creates and works with the full Jacobian matrix as discussed in \autoref{sec:Julia}. For $f(x,y,z)$ this will be a $3n \times 3n$ matrix which is a matrix with more than 3 billion elements for the largest values of $n$. We can also observe that for small vectors, MRST and ForwardAutoDiff have much more overhead than ForwardDiff and the analytic solution and hence are slower, but as $n$ grows, this overhead becomes more negligible. 
 
-The computational costs of both MRST and ForwardAutoDiff approach the analytic evaluation as $n$ grows, and it is thus interesting to see how they scale for even larger $n$. This can be seen in \autoref{fig:benchmarkLongVectors}. Here, ForwardDiff is left out since it becomes too slow, but I have added a new implementation \todo{Flere detaljer. Se kommentar.} from MRST that is specially optimized for element operations like we have when evaluating the function in \eqref{eq:benchmarkFunction}. This implementation actually becomes just as fast as the analytic evaluation in Julia for vectors of length $\approx 10^7$. As said, this method is specially efficient on functions like in \eqref{eq:benchmarkFunction}, but if we for example want to calculate something like
+The computational costs of both MRST and ForwardAutoDiff approach the analytic evaluation as $n$ grows, and it is thus interesting to see how they scale for even larger $n$. This can be seen in \autoref{fig:benchmarkLongVectors}. Here, ForwardDiff is left out since it becomes too slow, but I have added a new implementation from MRST that is specially optimized for element operations like we have when evaluating the function in \eqref{eq:benchmarkFunction}. This method exploits that all the Jacobians in the calculation of f, simply is a diagonal matrix with respect to each primary variable. This means that it can store the values of the diagonal as a vector and calculate the new Jacobians with simple vector multiplication. With this approach we skip the overhead accompanying sparse matrix multiplication. This implementation actually becomes just as fast as the analytic evaluation in Julia for vectors of length $\approx 10^7$. As said, this method is specially efficient for functions like in \eqref{eq:benchmarkFunction}, but if we for example want to calculate something like
 \begin{equation}
-g(x) = x\left[2:\text{end}\right] - x\left[1:\text{end}-1\right],
+g(x) = \frac{x\left[2:\text{end}\right] - x\left[1:\text{end}-1\right]}{\texttt{sum(}x\texttt{)}},
 \label{eq:differenceFunction}
 \end{equation}
-the performance is more similar to the older MRST implementation. Other than that, we can see that the trend seen in \autoref{fig:benchmarkAllADs} concerning the speed difference of the older MRST implementation and ForwardAutoDiff continues for longer vectors.
+the diagonal structure of the Jacobian is gone and the same implementation can not be used. The other MRST implementation with the Jacobians as sparse matrices is then used. Other than that, we can see that the trend seen in \autoref{fig:benchmarkAllADs} concerning the speed difference of the older MRST implementation and ForwardAutoDiff continues for longer vectors.
 
 The creators stated in the blog post accompanying the first release of Julia in 2012 \emph{\citep{juliaBlogRelease2012}} that Julia is supposed to be just as fast as C. Hence it would be interesting to if we can increase, or at least not loose, computational efficiency of the evaluation of the vector function in \eqref{eq:benchmarkFunction} by evaluating it scalar by scalar in a loop instead of vector multiplications. The difference can be illustrated by the two functions
 \lstinputlisting{code/benchmark_functions.jl}
@@ -122,7 +122,7 @@ where in our case $\rho_r = 850\text{kg}/\text{m}^3$ and $c$ is a constant contr
         \caption{The density of the oil in the reservoir plotted as a function of pressure}
         \label{fig:flowSolverPoreVolume}
     \end{subfigure}
-    \caption{\todo[inline]{Burde den ikke være motsatt? Plass til mindre olje jo høyere trykket er?}}
+    \caption{}
 \end{figure}
 
 The initial pressure in the reservoir is calculated by solving the nonlinear ODE
@@ -238,7 +238,15 @@ The difference in implementation of the Jacobian should make a big impact on the
          $30\times30\times30$ & ~ & 188.8s & 147.8s & 1.28\\ \hline
     \end{tabular}
 \end{table}
-For 10 cells in each spatial direction it is clear that what we assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true. The ForwardDiff method takes much longer time than ForwardAutoDiff and MRST. Since ForwardDiff already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. According to the results in \autoref{tab:FlowSolverSpeedTest}, MRST is a bit faster than ForwardAutoDiff. We can also see from the column farthest to the right that the ratio between time spent using MRST and ForwardAutoDiff stays approximately constant as the complexity of the problem grows. This indicates that the two different solvers scales equally, it is although not possible to say if it is the AD or the linear solver part that makes the solver in MATLAB faster than the one in Julia. 
-
+For 10 cells in each spatial direction it is clear that what we assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true. The ForwardDiff method takes much longer time than ForwardAutoDiff and MRST. Since ForwardDiff already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. According to the results in \autoref{tab:FlowSolverSpeedTest}, MRST is a bit faster than ForwardAutoDiff. We can also see from the column farthest to the right that the ratio between time spent using MRST and ForwardAutoDiff stays approximately constant as the complexity of the problem grows. This indicates that the two different solvers scales equally, it is although not possible to say if it is the AD or the linear solver part that makes the solver in MATLAB faster than the one in Julia. To get a better indication of what part of the code makes the difference, I have tested the speed of the linear solvers solving the system \textbf{Ax} = \textbf{b} in MATLAB and Julia. To make the test as relevant as possible I have made the matrix \textbf{A}$\in\Re^{n\times n}$ as a random sparse matrix where 0.05 percent of the elements are non zero. The \textbf{b} vector is a random vector of values between 0 and 1. The result for different $n$ can be seen in \autoref{fig:benchmarkLinearSolver}. 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width = 0.9\textwidth]{figures/benchmark_linear_solvers.pdf}
+    \caption{Time spent solving a system \textbf{Ax} = \textbf{b} for \textbf{x}$\in\Re^{n}$.}
+    \label{fig:benchmarkLinearSolver}
+\end{figure}
+We can see that the linear solvers perform very similar except for the highest value of $n$. This however is most likely the fact that, because of the length of the test, the computer that tested these solvers becomes warm in the ending phase of the test, hence it reduces it's computational speed. Since the test of the MATLAB solver executed last, it is safe to say that the increase in time is due to the heating of the computer. With this in mind we can say that the linear solvers in MATLAB and Julia perform very similar and that the speed differences in \autoref{tab:FlowSolverSpeedTest} most likely occur from the difference in the AD-tools.
 
 \todo[inline]{Er det relevant å ha med kode i Appendix? Eventuelt levere kode ved siden av?}
+
+spparms(

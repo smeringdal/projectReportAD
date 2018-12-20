@@ -29,23 +29,23 @@ In forward AD, the function and derivative value are stored in a tuple $[\cdot, 
 As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for $f$ we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
 \begin{equation}
     \begin{aligned}
-    &\big[f \hspace{0.5em}, \hspace{0.5em}  f_x\big] \pm \big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big] = \big[f \pm g \hspace{0.5em} , \hspace{0.5em}  f_x \pm g_x\big] \hspace{0.5em}, \\\\
-    &\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\cdot \big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big] = \big[f\cdot g \hspace{0.5em} , \hspace{0.5em}  f_x\cdot g + f\cdot g_x\big],\\\\
-    &\frac{\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]}{\big[g \hspace{0.5em} , \hspace{0.5em}  g_x\big]} = \Bigg[\frac{f}{g} \hspace{0.5em} , \hspace{0.5em}  \frac{f_x\cdot g - f\cdot g_x}{g^2}\Bigg].
+    &\big[\adpair{f}{f_x}\big] \pm \big[\adpair{g}{g_x}   \big] = \big[\adpair{f \pm g}{f_x \pm g_x} \big] ,\\\\
+    &\big[  \adpair{f}{f_x}   \big]\cdot \big[  \adpair{g}{g_x}   \big] = \big[  \adpair{f\cdot g}{f_x\cdot g + f\cdot g_x}   \big],\\\\
+    &\frac{\big[ \adpair{f}{f_x}   \big]}{\big[  \adpair{g}{g_x}   \big]} = \Bigg[  \adpair{\frac{f}{g}}{\frac{f_x\cdot g - f\cdot g_x}{g^2}}\Bigg].
 \end{aligned}
 \label{eq:arithmeticOperators}
 \end{equation}
 
 It is also necessary to define the chain rule such that for a function h(x)
 \begin{equation*}
-h\big(f(x)\big) = h\bigg(\big[f \hspace{0.5em} , \hspace{0.5em} f_x\big]\bigg) = \big[h(f) \hspace{0.5em} , \hspace{0.5em}  f_x\cdot h'(f)\big]. 
+h\big(f(x)\big) = h\bigg(\big[ \adpair{f }{f_x}  \big]\bigg) = \big[ \adpair{h(f)}{ f_x\cdot h'(f)} \big].
 \end{equation*}
 The only thing that remains to define are the rules concerning elementary functions like
 \begin{equation}
     \begin{aligned}
-    &\exp\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \big[\exp(f) \hspace{0.5em} , \hspace{0.5em}  \exp(f)\cdot f_x\big],\\
-    &\log\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \Big[\log(f) \hspace{0.5em} , \hspace{0.5em}  \frac{f_x}{f}\Big],\\
-    &\sin\bigg(\big[f \hspace{0.5em} , \hspace{0.5em}  f_x\big]\bigg) =  \big[\sin(f) \hspace{0.5em} , \hspace{0.5em}  \sin(f)\cdot f_x\big]\text{,  etc.}\\
+    &\exp\bigg(\big[ \adpair{f}{f_x}  \big]\bigg) =  \big[ \adpair{\exp(f)}{\exp(f)\cdot f_x}  \big],\\
+    &\log\bigg(\big[ \adpair{f}{f_x}  \big]\bigg) =  \Big[  \adpair{\log(f)}{\frac{f_x}{f}}   \Big],\\
+    &\sin\bigg(\big[  \adpair{f}{f_x}   \big]\bigg) =  \big[  \adpair{\sin(f)}{\sin(f)\cdot f_x}   \big]\text{,  etc.}\\
 \end{aligned}
 \label{eq:elementaryFunctions}
 \end{equation}
@@ -55,26 +55,26 @@ When these arithmetic operators and the elementary functions are implemented, yo
     \label{eq:forwardADExample}
     f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
 \end{equation}
-The declaration of the AD-variable gives $x = [2 \hspace{0.5em} , \hspace{0.5em}  1]$. All scalars can be viewed as AD variables with derivative equal to 0 such that
+The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD variables with derivative equal to 0 such that
 \begin{align*}
-    2x &= [2 \hspace{0.5em} , \hspace{0.5em}  0]\cdot [2 \hspace{0.5em} , \hspace{0.5em} 1] \\
-    &=[2\cdot2 \hspace{0.5em} , \hspace{0.5em}  0\cdot1 + 2\cdot 1]\\
-    &=[4 \hspace{0.5em} , \hspace{0.5em} 2].
+    2x &= [ \adpair{2}{0}  ]\cdot [ \adpair{2}{1} ] \\
+    &=[ \adpair{2\cdot2}{0\cdot1 + 2\cdot 1}  ]\\
+    &=[ \adpair{4}{2} ].
 \end{align*}
 After this computation, we get from the exponential
 \begin{align*}
-    \exp(2x) &= \exp\big([4 \hspace{0.5em} , \hspace{0.5em} 2]\big)\\
-    &= [\exp(4) \hspace{0.5em} , \hspace{0.5em} \exp(4)\cdot 2],
+    \exp(2x) &= \exp\big([ \adpair{4}{2} ]\big)\\
+    &= [ \adpair{\exp(4)}{\exp(4)\cdot 2} ],
 \end{align*}
 and lastly from the product rule we get the correct tuple for $f(x)$
 \begin{align*}
-    x\cdot \exp(2x) &= [2 \hspace{0.5em} , \hspace{0.5em}  1]\cdot [\exp(4)\hspace{0.5em}, \hspace{0.5em} 2\cdot\exp(4)]\\
-    &=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em}  1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)]\\
-    [f\hspace{0.5em},\hspace{0.5em} f_x] &=[2\cdot\exp(4) \hspace{0.5em} , \hspace{0.5em} 5\cdot\exp(4)].
+    x\cdot \exp(2x) &= [ \adpair{2}{1}  ]\cdot [\adpair{\exp(4)}{ 2\cdot\exp(4)} ]\\
+    &=[ \adpair{2\cdot\exp(4)}{1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)}  ]\\
+    [f, f_x] &=[ \adpair{2\cdot\exp(4)}{5\cdot\exp(4)} ].
 \end{align*}
 This result is equal
 \begin{equation*}
-    \big(f(x) \hspace{0.5em},\hspace{0.5em} f_x(x)\big) = \big(x\cdot\exp(2x) \hspace{0.5em},\hspace{0.5em} (1+2x)\exp(2x)\big)
+    \big(\adpair{f(x)}{f_x(x)}\big) = \big(\adpair{x\cdot\exp(2x)}{(1+2x)\exp(2x)}\big)
 \end{equation*}
 for $x = 2$.
 
@@ -213,18 +213,18 @@ The calculation of the derivatives together with a dependency graph can be seen 
 Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that when we implement this, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function- and the derivative values as we did in forward AD. This means that we have to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation with multiple parameters}
-When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$ and we want to obtain the gradient of $f$. Then the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$ and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x,\hspace{0.5em} f_y,\hspace{0.5em} f_z)^\top$. To achieve this we define the corresponding AD-variables
+When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$ and we want to obtain the gradient of $f$. Then the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$ and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this we define the corresponding AD-variables
 \begin{equation*}
-    [x\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\hspace{2em},\hspace{2em}
-    [y\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\hspace{2em},\hspace{2em}
-    [z\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top].
+    [x,(1,0,0)^\top]\hspace{2em},\hspace{2em}
+    [y,(0,1,0)^\top]\hspace{2em},\hspace{2em}
+    [z,(0,0,1)^\top].
 \end{equation*}
 Each primary AD-variable now not only stores its derivative with respect to itself, but also the gradient with respect to all other primary variables. The operators defined in Equations (\ref{eq:arithmeticOperators}) and the elementary functions in Equations (\ref{eq:elementaryFunctions}) are still valid, but instead of scalar products they are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
 \begin{align*}
-    xyz &= [1\hspace{0.5em},\hspace{0.5em}(1,0,0)^\top]\cdot [2\hspace{0.5em},\hspace{0.5em}(0,1,0)^\top]\cdot
-    [3\hspace{0.5em},\hspace{0.5em}(0,0,1)^\top] \\
-    &=[1\cdot 2\cdot 3\hspace{0.5em},\hspace{0.5em}2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top] \\
-    [f\hspace{0.5em},\hspace{0.5em}\nabla f] &= [6\hspace{0.5em},\hspace{0.5em}(6,3,2)^\top].
+    xyz &= [1,(1,0,0)^\top]\cdot [2,(0,1,0)^\top]\cdot
+    [3,(0,0,1)^\top] \\
+    &=[1\cdot 2\cdot 3,2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top] \\
+    [f,\nabla f] &= [6,(6,3,2)^\top].
 \end{align*}
 This result is equal to the tuple
 \begin{equation*}
