@@ -61,20 +61,20 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
 \end{figure}
 
 \section{Setup of Governing Equations}
-After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
+After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in Equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 
-\begin{wrapfigure}{r}{5.5cm}
-    \includegraphics[width=\linewidth]{figures/flowSolver_discrete_operators_C.eps}
-    \caption{Structure of discrete operator \texttt{C}.}
-    \label{fig:discreteOperatorsC}
-\end{wrapfigure}
 The matrix C in the discrete operators are created such that when it is multiplied by the pressure $p$, the result becomes the pressure difference between two adjacent cells, as defined in Equation \eqref{eq:discreteGradient}. The matrix C is stored as a sparse matrix, and the reason why is clear from \autoref{fig:discreteOperatorsC}, which shows the sparse  structure of C. The divergence operator is made using the fact that in the continuous case, the gradient operator is the adjoint of the divergence operator
 \begin{equation*}
     \int_\Omega p\nabla \cdot \vec{v} d\Omega + \int_\Omega \vec{v}\nabla p d\Omega = 0.
 \end{equation*}
 This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
 
+\begin{wrapfigure}{r}{5.5cm}
+    \includegraphics[width=\linewidth]{figures/flowSolver_discrete_operators_C.eps}
+    \caption{Structure of discrete operator \texttt{C}.}
+    \label{fig:discreteOperatorsC}
+\end{wrapfigure}
 Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, as explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end, all the equations we want to solve should be on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$, so that we can use the Newton-Raphson method described in Equation \eqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. One of the advantages of defining the discrete gradient- and divergence operator is that the continuous and discrete forms of the equations look very similar. Hence I will first state the continuous version of the equation and then the discrete, so that it is easy to see how similar they look. I start by defining Darcy's law, which explains how the oil will flow through the porous rock
 
 \begin{equation*}
@@ -109,6 +109,7 @@ The residual expression for the total production \texttt{qS} is then given by su
 Here \texttt{rhoS} is the density of the oil at the surface, to obtain the total volume produced. To control the well, we can either set total inflow or outflow of the well (evaluated at surface pressure) to be constant, or set the datum (bottom-hole) pressure as constant. In either case, we will wish to compute the other (i.e., if pressure is given, we determine the surface rate, and vice versa). Herein, we assume pressure to be given as 100 bar and we get
 \lstinputlisting{code/ctrlEq.jl}
 When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. The first 1000 residual functions are the \texttt{presEq} with negative production \texttt{q\_conn} for the indices \texttt{wc}. Equation number 1001 is the \texttt{rateEq} and Equation 1002 is the \texttt{ctrlEq}. Hence, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate \texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method, defined in Equation \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
+\newpage
 \lstinputlisting{code/press_solver_main_loop.jl}
 
 \section{Flow Solver Results}
