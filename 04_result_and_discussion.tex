@@ -4,6 +4,7 @@ To test Julia's AD tools in a real world application I have implemented an examp
 
 To compare different AD implementations in Julia and MATLAB I have implemented MRST's tutorial, "Single-phase Compressible AD Solver" from \texttt{flowSolverTutorialAD.m} \emph{\citep{flowSolverADExample}}, in Julia. The example is made as an introduction to how AD can be used in MRST, hence it is a good example to use when the goal is to compare the implementation of AD in MATLAB and Julia. 
 
+\section{Grid Construction}
 The example consist of modelling how the pressure drops within a rectangular reservoir measuring $200\times 200 \times 50 \text{m}^3$ when we have a well that that is producing oil. "Single-phase solver" only means that we do not have different phases of fluid, like liquid and gas, present during the simulation. As the purpose of this example is to compare the AD tools in MATLAB and Julia and not the process of solving the problem, including setting up the grid and other necessary variables, some of the initialization and plotting have been performed in Julia by calling code from MRST. This has been done by using the package MATLAB.jl \emph{\citep{MATLAB.jl}}. This package allows calling MATLAB functions from Julia and retrieve the output variables. This is done by the function call
 \lstinputlisting{code/mxcall.jl}
 where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia, we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G} that contains the grid properties is now a structured array (struct), having all the information on cells, facets, vertices and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{sec:ApplicationsAD}. 
@@ -59,6 +60,7 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
     \caption{}
 \end{figure}
 
+\section{Setup Governing Equations}
 After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 
@@ -108,6 +110,8 @@ Here \texttt{rhoS} is the density of the oil at the surface, to obtain the total
 \lstinputlisting{code/ctrlEq.jl}
 When all the governing equations are defined, we merge them into one large residual vector function $\boldsymbol{F}(\boldsymbol{x})$. The first 1000 residual functions are the \texttt{presEq} with negative production \texttt{q\_conn} for the indices \texttt{wc}. Equation number 1001 is the \texttt{rateEq} and Equation 1002 is the \texttt{ctrlEq}. Hence, $\boldsymbol{x}\in\Re^{1002}$, where the first 1000 elements are the pressure at the different nodes, element 1001 will be the pressure at the datum point inside the well (\texttt{bhp}), and element 1002 is the surface fluid rate \texttt{qS}. Now, if we start by defining \texttt{p}, \texttt{bhp} and \texttt{qS} as AD-variables, $\boldsymbol{F}$ will also be an AD-variable and we will have the Jacobian of the residual vector function $\boldsymbol{F}$. This means we can solve the equations using the Newton-Raphson method, defined in Equation \eqref{eq:newtonRaphsonVector}. A pseudo code of how we solve the system can be seen below.
 \lstinputlisting{code/press_solver_main_loop.jl}
+
+\section{Flow Solver Results}
 If we simulate how the pressure in the reservoir will decay during one year, we will get the result displayed in \autoref{fig:flowSolverResult}.
 \begin{figure}[H]
     \centering

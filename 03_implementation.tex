@@ -43,7 +43,7 @@ As mentioned in \autoref{sec:Julia}, Julia already has an AD library called Forw
 \label{eq:benchmarkFunction}
 f(x,y,z)  = \exp(2xy) - 4xz^2 + 13x - 7,
 \end{equation}
-and $x,y,z \in \Re^n$. \autoref{fig:benchmarkAD} shows how time spent calculating the function value and the Jacobian of the function, for the different methods, scales as the length of the vectors $n$ increases.
+and $x,y,z \in \Re^n$. \autoref{fig:benchmarkAD} shows how time spent calculating the function value and the Jacobian of the function, for the different methods, scales as the length of the vectors $n$ increases. \footnote{All benchmarks in this project are performed on a MacBook Pro (Retina, 13-inch, Late 2013), 2,8 GHz Intel Core i7 processor and 16 GB 1600 MHz DDR3 memory. For benchmarking time in Julia, I have used the Benchmarking library \emph{\cite{BenchmarkTools}}. For benchmarking time in Matlab I have taken the median of mulitple test using the stopwatch \emph{\cite{TicToc}}.}
 
 \begin{figure}[H]
     \centering
@@ -77,7 +77,7 @@ Implementation specific parts are left out. The result can be seen in \autoref{f
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/benchmark_ad_in_loop.pdf}
-    \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors. \todo[inline]{få plottene som tilhører samme metode i samme farge}}
+    \caption{Time spent calculating the value and gradient of $f$ in \eqref{eq:benchmarkFunction} as                         a function of length of the input vectors.}
     \label{fig:benchmarkADInLoop}
 \end{figure}
 
