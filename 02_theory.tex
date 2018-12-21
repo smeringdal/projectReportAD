@@ -26,7 +26,7 @@ AD can be split into two different methods -- forward AD and backward AD. Both m
 \subsection{Forward Automatic Differentiation}
 In forward AD, the function and derivative value are stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
 
-As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[\adpair{x}{1}]$, and for $f$ we have [\adpair{f}{f_x}]. In the pair $[adpair{x}{1}]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$, and $f_x$ is the numerical value of $f'(x)$.  We then define the arithmetic operators such that for functions $f$ and $g$,
+As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[\adpair{x}{1}]$, and for $f$ we have [\adpair{f}{f_x}]. In the pair $[\adpair{x}{1}]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$, and $f_x$ is the numerical value of $f'(x)$.  We then define the arithmetic operators such that for functions $f$ and $g$,
 \begin{equation}
     \begin{aligned}
     &\big[\adpair{f}{f_x}\big] \pm \big[\adpair{g}{g_x}   \big] = \big[\adpair{f \pm g}{f_x \pm g_x} \big] ,\\\\
@@ -50,7 +50,7 @@ The only things that remain to be defined are the rules concerning elementary fu
 \label{eq:elementaryFunctions}
 \end{equation}
 
-When these arithmetic operators and the elementary functions are implemented, you are able to evaluate the derivative of any scalar function without actually doing any form of differentiation yourself. Let us look at an step by step example where 
+When these arithmetic operators and the elementary functions are implemented, you are able to evaluate the derivative of any scalar function without actually doing any form of differentiation yourself. Let us look at a step by step example where 
 \begin{equation}
     \label{eq:forwardADExample}
     f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
@@ -109,7 +109,7 @@ This is very convenient, but how does dual numbers handle elementary functions l
     f(x) = f(a+b\epsilon) &= f(a) + \frac{f'(a)}{1!}(b\epsilon) + \frac{f''(a)}{2!}(b\epsilon)^2+...\\
         &=f(a) + f'(a)b\epsilon.
 \end{align*}
-This means that to make dual numbers handle elementary functions, the first order Taylor expansion needs to be implemented. This equals the implementations of elementary differentiation rules described in equations \eqref{eq:elementaryFunctions}. 
+This means that to make dual numbers handle elementary functions, the first order Taylor expansion needs to be implemented. In practise, this equals the implementations of elementary differentiation rules described in equations \eqref{eq:elementaryFunctions}. 
 
 The weakness of implementing AD with dual numbers is clear for functions with multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter, and the rest as constants:
 \begin{align*}
@@ -207,7 +207,7 @@ substituting $s$ with $g_5$ yields
     \end{align*}
 \end{multicols}
 The calculation of the derivatives together with a dependency graph can be seen in \autoref{fig:depency_graph_backward_AD}. This shows that we get all the derivatives of $f(x) = g_5$ with a single function evaluation!
-\begin{figure}[htbp]
+\begin{figure}[H]
 	\centering
 	    \includegraphics[width=0.7\textwidth]{figures/dependency_graph_backward_AD.pdf}
 	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
@@ -219,20 +219,20 @@ The disadvantage of backward AD is that to be able carry along the function- and
 \subsection{Forward Automatic Differentiation With Multiple Parameters}
 When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$, and we want to obtain the gradient of $f$. Then, the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
 \begin{equation*}
-    [x,(1,0,0)^\top]\hspace{2em},\hspace{2em}
-    [y,(0,1,0)^\top]\hspace{2em},\hspace{2em}
-    [z,(0,0,1)^\top].
+    [\adpair{x}{(1,0,0)^\top}]\hspace{2em},\hspace{2em}
+    [\adpair{y}{(0,1,0)^\top}]\hspace{2em},\hspace{2em}
+    [\adpair{z}{(0,0,1)^\top}].
 \end{equation*}
 Each primary AD-variable now not only stores its derivative with respect to itself, but also the gradient with respect to all other primary variables. The operators defined in Equations (\ref{eq:arithmeticOperators}) and the elementary functions in Equations (\ref{eq:elementaryFunctions}) are still valid, but instead of scalar products they are now vector products. As an example, let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
 \begin{align*}
-    xyz &= [1,(1,0,0)^\top]\cdot [2,(0,1,0)^\top]\cdot
-    [3,(0,0,1)^\top] \\
-    &=[1\cdot 2\cdot 3,2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top] \\
-    [f,\nabla f] &= [6,(6,3,2)^\top].
+    xyz &= [\adpair{1}{(1,0,0)^\top}]\cdot [\adpair{2}{(0,1,0)^\top}]\cdot
+    [\adpair{3}{(0,0,1)^\top}] \\
+    &=[\adpair{1\cdot 2\cdot 3}{2\cdot3\cdot(1,0,0)^\top + 1\cdot3\cdot(0,1,0)^\top + 1\cdot2\cdot(0,0,1)^\top}] \\
+    [\adpair{f}{\nabla f}] &= [\adpair{6}{(6,3,2)^\top}].
 \end{align*}
 This result is equal to the tuple
 \begin{equation*}
-    \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz \hspace{0.5em},\hspace{0.5em} (yz,xz,xy)^\top\big)
+    \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz ,\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
 for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually  vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Then, it is the Jacobian of $f$ we are interested in:
 \begin{align*}
@@ -243,7 +243,7 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
     \end{bmatrix}.
 \end{align*}
-The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of the vector operations seen in the previous examples. 
+The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous examples. 
 
 \section{Applications of Automatic Differentiation}
 \label{sec:ApplicationsAD}
@@ -339,7 +339,7 @@ This means we can solve the Poisson equation \eqref{eq:Poisson}, using the schem
 
 \subsection{Discrete Differentiation Operators}
 \label{sec:DiscreteOperators}
-To show the real elegance of using AD to solve PDEs, we want to create a framework in which we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured grid we have.
+To show the real elegance of using AD to solve PDEs, we want to create a framework in which we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured our grid is.
 
 Instead of the simple two-cell grid we used in \autoref{fig:gridTwoCells}, we now consider a a general polygonal grid. \autoref{fig:partialGrid} illustrates an example, in which all cells are quadrilaterals. To define the discrete divergence and gradient operators, we need some information about the topology of the grid. The grid can be described in terms of three types of objects: cells, facets and vertices. The cells are each $\Omega_i \subset \Omega$. In our two-dimensional case, the facets are simply the lines that delimit each cell, and the vertices are the endpoints of each facet. In addition we introduce nodes. In the case demonstrated by \autoref{fig:gridTwoCells} we had two nodes, $u_i$ and $u_k$ and for the finite volume method they are the average value of u on the corresponding cell. Each cell and facet has physical properties like area or length, and centroid or centre. Each facet also has a normal vector. 
 \begin{figure}[H]
@@ -349,16 +349,16 @@ Instead of the simple two-cell grid we used in \autoref{fig:gridTwoCells}, we no
     \label{fig:partialGrid}
 \end{figure}
 
-\autoref{fig:partialGrid} shows how we can introduce two different mappings that explain the relation between the cells and the facets, where the values dependent on cells 5 and 8 are written out. The first relation, $F(c)$, is the mapping from cells $c$ to their delimiting facets $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
+\autoref{fig:partialGrid} shows how we can introduce two different mappings that explain the relation between the cells and the facets. The values dependent on cells 5 and 8 are written out. The first relation, $F(c)$, is the mapping from cells $c$ to their delimiting facets $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
 
 We now have all the physical properties of the grid we used to attain the formulae in equation \eqref{eq:PoissonSolvableTwoCells}. From these, we want to create discrete divergence and gradient operators that correspond to the continuous equivalents for this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the discrete gradient operator for a facet $f$ is defined as 
 \begin{equation}
-    \texttt{gradient}(u)[f] = u[C_2(f)] - u[C_1(f)], 
+    \texttt{dGrad}(u)[f] = u[C_2(f)] - u[C_1(f)], 
     \label{eq:discreteGradient}
 \end{equation}
-where $u[C_i(f)]$ is the value of u at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in equation \eqref{eq:flux}. Let $v_{i,k} = v[f]$, where $f$ is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for cell $c$ is defined as 
+where $u[C_i(f)]$ is the value of $u$ at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in equation \eqref{eq:flux}. Let $v_{i,k} = v[f]$, where $f$ is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for cell $c$ is defined as 
 \begin{equation*}
-    \texttt{divergence}(\textbf{v})[c] = \sum_{f\in f(c)} \operatorname{sgn}(f)\textbf{v}[f]
+    \texttt{dDiv}(\textbf{v})[c] = \sum_{f\in f(c)} \operatorname{sgn}(f)\textbf{v}[f]
 \end{equation*}
 where the function $\operatorname{sgn}(f)$ is defined as 
 \begin{align*}
@@ -369,10 +369,10 @@ where the function $\operatorname{sgn}(f)$ is defined as
     \end{array}
     \right.
 \end{align*}
-Hence we can now, only based on the topology of the grid, create discrete divergence and gradient operators, so that the discrete Poisson equations we want to solve can be written very similar to the continuous case
+The extra \texttt{d} in front of the names are chosen to avoid name collision with Julia's built in \texttt{div} function. Now we can only based on the topology of the grid, create discrete divergence and gradient operators, so that the discrete Poisson equations we want to solve can be written very similar to the continuous case
 \begin{align*}
     -\nabla(\textbf{K}\nabla u) - q &= 0 \\
-    \textbf{F}(\textbf{u}) = \texttt{divergence}(\textbf{T }\texttt{gradient}(\textbf{u}))-\textbf{q} &= 0.
+    \textbf{F}(\textbf{u}) = \texttt{dDiv}(\textbf{T }\texttt{dGrad}(\textbf{u}))-\textbf{q} &= 0.
 \end{align*}
 Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equations. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it. But for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid. Although the system then becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
 

@@ -22,7 +22,7 @@ Since we assume that the oil have a constant compressibility, the density of the
     \label{eq:pressureSolverDensity}
 \end{equation}
 where $\rho_r = 850\text{kg}/\text{m}^3$ and $c$ is a constant controlling how fast the oil is compressed. The density of the fluid as a function of pressure is plotted for some pressure values in \autoref{fig:flowSolverDensity}.
-\begin{figure}[htb]
+\begin{figure}[H]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures/flow_solver_pore-volume.eps}
@@ -60,7 +60,7 @@ for the fluid density given by $\rho(p) = \rho_r\cdot\exp\big(c\cdot(p-p_r\big)$
     \caption{}
 \end{figure}
 
-\section{Setup Governing Equations}
+\section{Setup of Governing Equations}
 After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 
@@ -158,7 +158,7 @@ For 10 cells in each spatial direction it is clear that what I assumed based on 
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/benchmark_linear_solvers.pdf}
-    \caption{Time spent solving the system \textbf{Ax} = \textbf{b} for \textbf{x}$\in\Re^{n}$ and \textbf{A} = \textbf{J}, the Jacobian from the first step in the flow solver.}
+    \caption{Computational time for solving the system \textbf{Ax} = \textbf{b} for \textbf{x}$\in\Re^{n}$ and \textbf{A} = \textbf{J}, the Jacobian from the first step in the flow solver.}
     \label{fig:benchmarkLinearSolver}
 \end{figure}
 We can see that the linear solvers perform very similar for all three cases, with MATLAB having small victories in computation time for 10 and 20 cells and Julia for 30. With this in mind, we can say that the linear solvers in MATLAB and Julia perform so similar that it is a valid assumption to assume that they perform equally well. Hence the speed differences in \autoref{tab:FlowSolverSpeedTest} is most likely because of speed differences in the AD-tools. This means that for the equations in the "Single-phase Compressible AD Solver" example, the \textit{ForwardAutoDiff} implementation is approximately 30\% slower than in MRST.
