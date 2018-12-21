@@ -1,8 +1,8 @@
 \chapter{Theory}
 \label{ch:theory}
-\section{Automatic differentiation}
+\section{Automatic Differentiation}
 \label{sec:AD}
-Automatic differentiation (AD) is a method that enables a computer to numerically evaluate the derivative of a function specified by a computer program with very little effort from the user. If you have not heard of AD before, the first thing you might think of is algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus like, e.g.,
+Automatic differentiation (AD) is a method that enables a computer to numerically evaluate the derivative of a function specified by a computer program with very little effort from the user. If you have not heard of AD before, the first thing you might think of is algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus
 \begin{align*}
     &\frac{d}{dx}x^n     = n\cdot x^{n-1} \\
     &\frac{d}{dx}cos(x)  = -sin(x) \\
@@ -13,20 +13,20 @@ etc. and the chain- and product rule
     &\frac{d}{dx}f(x)\cdot g(x) = f'(x)\cdot g(x) + f(x)\cdot g'(x) \\
     &\frac{d}{dx}f(g(x)) = g'(x)\cdot f'(g(x)).
 \end{align*}
-The computer will then use these rules on symbolic variables to obtain the derivative of any function given. This will give perfectly accurate derivatives, but the disadvantage with this approach is that it is computational demanding and as f(x) becomes more complex, the calculations will become slow.
+The computer will then use these rules on symbolic variables to obtain the derivative of any function given. This will give perfectly accurate derivatives, but it is computationally demanding, and as f(x) becomes more complex the calculations will become slow.
 
 If AD is not symbolic differentiation, you might think that it is finite differences, where you use the definition of the derivative
 \begin{equation*}
     \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
 \end{equation*}
-with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$ and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur, e.g., because of machine precision, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called truncation error. Hence, in finite differences you have the problem that you need a small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Hence, the finite-difference method is an unstable and is not what we call AD.
+with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$ and then divide by a small number $h$. This means that any small rounding errors in the subtraction which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called truncation error. Hence, in finite differences you have the problem that you need a small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Hence, the finite-difference method is unstable and is not what we call AD.
 
 AD can be split into two different methods -- forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, we keep track of the function values and the corresponding values of the derivatives as we go. Both methods do this by separating each expression into a finite set of elementary operations. 
 
 \subsection{Forward Automatic Differentiation}
 In forward AD, the function and derivative value are stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on the function. 
 
-As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[x, 1]$ and for $f$ we have [$f$, $f_x$]. In the pair $[x,1]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$ and $f_x$ the numerical value of $f'(x)$.  We then define the arithmetic operators for such pairs such that for functions $f$ and $g$,
+As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$ where $x$ is a scalar variable. Then the AD-variable $x$ is the pair $[\adpair{x}{1}]$, and for $f$ we have [\adpair{f}{f_x}]. In the pair $[adpair{x}{1}]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$, and $f_x$ is the numerical value of $f'(x)$.  We then define the arithmetic operators such that for functions $f$ and $g$,
 \begin{equation}
     \begin{aligned}
     &\big[\adpair{f}{f_x}\big] \pm \big[\adpair{g}{g_x}   \big] = \big[\adpair{f \pm g}{f_x \pm g_x} \big] ,\\\\
@@ -36,11 +36,11 @@ As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$
 \label{eq:arithmeticOperators}
 \end{equation}
 
-It is also necessary to define the chain rule such that for a function h(x)
+It is also necessary to define the chain rule so that for a function h(x)
 \begin{equation*}
 h\big(f(x)\big) = h\bigg(\big[ \adpair{f }{f_x}  \big]\bigg) = \big[ \adpair{h(f)}{ f_x\cdot h'(f)} \big].
 \end{equation*}
-The only thing that remains to define are the rules concerning elementary functions like
+The only things that remain to be defined are the rules concerning elementary functions like
 \begin{equation}
     \begin{aligned}
     &\exp\bigg(\big[ \adpair{f}{f_x}  \big]\bigg) =  \big[ \adpair{\exp(f)}{\exp(f)\cdot f_x}  \big],\\
@@ -50,12 +50,12 @@ The only thing that remains to define are the rules concerning elementary functi
 \label{eq:elementaryFunctions}
 \end{equation}
 
-When these arithmetic operators and the elementary functions are implemented, you are able to evaluate the derivative of any scalar function without actually doing any form of differentiation yourselves. Let us look at an step by step example where 
+When these arithmetic operators and the elementary functions are implemented, you are able to evaluate the derivative of any scalar function without actually doing any form of differentiation yourself. Let us look at an step by step example where 
 \begin{equation}
     \label{eq:forwardADExample}
     f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
 \end{equation}
-The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD variables with derivative equal to 0 such that
+The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD variables with derivative equal to 0, such that
 \begin{align*}
     2x &= [ \adpair{2}{0}  ]\cdot [ \adpair{2}{1} ] \\
     &=[ \adpair{2\cdot2}{0\cdot1 + 2\cdot 1}  ]\\
@@ -80,12 +80,13 @@ for $x = 2$.
 
 
 \subsection{Dual Numbers}
-One approach to implementing forward AD is by dual numbers. Similar to complex numbers dual numbers are defined as 
+\label{sec:DualNumbers}
+One approach to implementing forward AD is by dual numbers. Similarly to complex numbers, dual numbers are defined as 
 \begin{equation}
     a + b\epsilon.
     \label{eq:DualNumbers}
 \end{equation}
-Here $a$ and $b$ are scalars and corresponds to the function value and the derivative value. $\epsilon$ is like we have for complex numbers $i^2 = -1$, but the corresponding relation for dual numbers are $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form of definition \eqref{eq:DualNumbers}. Then we get for addition
+Here $a$ and $b$ are scalars and corresponds to the function value and the derivative value. $\epsilon$ is like we have for complex numbers $i^2 = -1$, but the corresponding relation for dual numbers are $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form of Definition \eqref{eq:DualNumbers}. Then we get for addition
 \begin{align*}
 x+y &= (a+b\epsilon)+(c+d\epsilon)\\
     &= a+c+(b+d)\epsilon,
@@ -103,14 +104,14 @@ and for division
     &=\frac{ac-(ad-bc)\epsilon-bd\epsilon^2}{c^2-d\epsilon^2}\\
     &=\frac{a}{c} + \frac{bc-ad}{c^2}\epsilon.
 \end{align*}
-This is very convenient, but how does dual numbers handle elementary functions like $\sin$, $\exp$, $\log$ etc? If we look at the Taylor expansion of a function $f(x)$ where x is a dual number, we get
+This is very convenient, but how does dual numbers handle elementary functions like $\sin$, $\exp$, $\log$? If we look at the Taylor expansion of a function $f(x)$, where x is a dual number, we get
 \begin{align*}
     f(x) = f(a+b\epsilon) &= f(a) + \frac{f'(a)}{1!}(b\epsilon) + \frac{f''(a)}{2!}(b\epsilon)^2+...\\
         &=f(a) + f'(a)b\epsilon.
 \end{align*}
-This means that to make dual numbers handle elementary functions, the first order Taylor expansion needs to be implemented. This equals the implementation of elementary differentiation rules described in equations \eqref{eq:elementaryFunctions}. 
+This means that to make dual numbers handle elementary functions, the first order Taylor expansion needs to be implemented. This equals the implementations of elementary differentiation rules described in equations \eqref{eq:elementaryFunctions}. 
 
-The weakness of implementing AD with dual numbers is clear for functions with multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter and the rest as constants:
+The weakness of implementing AD with dual numbers is clear for functions with multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter, and the rest as constants:
 \begin{align*}
     f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)\\
         &=7+3\epsilon.
@@ -119,35 +120,37 @@ Here, $7$ is the function value of $f$, while $3$ is the derivative value $f_x$ 
 
 \subsection{Backward Automatic Differentiation}
 \label{sec:BackwardAD}
-The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where backward AD is a more efficient way of obtaining the derivatives. To explain backward AD it is easier to first consider the approach for forward AD, where the method also can be be explained as an extensive use of the chain rule
+The main disadvantage with forward AD is when there are many input variables and you want the derivative with respect to all variables. This is where backward AD is a more efficient way of obtaining the derivatives. To explain backward AD, it is easier to first consider the approach for forward AD where the method also can be be explained as an extensive use of the chain rule
 \begin{equation}
     \label{eq:chainRule}
     \frac{\partial f}{\partial t} = \sum_i\left(\frac{\partial f}{\partial u_i}\cdot\frac{\partial u_i}{\partial t}\right).
 \end{equation}
-Take $f(x) = x\cdot\exp(2x)$ like in the forward AD example \eqref{eq:forwardADExample}. We then split up the function into a sequence of elementary functions
+Take $f(x) = x\cdot\exp(2x)$, like in the forward AD example \eqref{eq:forwardADExample}. We then split up the function into a sequence of elementary functions
 \begin{equation}
     \label{eq:BackwardADSeperationSimple}
     x, \hspace{2em} g_1 = 2x, \hspace{2em} g_2 = \exp(g_1), \hspace{2em} g_3 = x\cdot g_2,
 \end{equation}
-where clearly $f(x) = g_3$. If we want the derivative of $f$ with respect to $x$ we can obtain expressions for all $g$'s by using the chain rule \eqref{eq:chainRule}
+where clearly $f(x) = g_3$. If we want the derivative of $f$ with respect to $x$, we can obtain expressions for all $g$'s by using the chain rule \eqref{eq:chainRule}
 \begin{align*}
      \frac{\partial x}{\partial x} &= 1, \\
      \frac{\partial g_1}{\partial x} &= 2, \\
      \frac{\partial g_2}{\partial x} &= \frac{\partial}{\partial g_1}\exp(g_1)\cdot\frac{\partial g_1}{\partial x} = 2\exp(2x).
 \end{align*}
-Lastly by calculating the derivative of $g_3$ with respect to $x$ in the same matter yields the expression for the derivative of f
+Lastly, calculating the derivative of $g_3$ with respect to $x$ in the same way yields the expression for the derivative of f
 \begin{align*}
     \frac{\partial f}{\partial x} &= \frac{\partial g_3}{\partial x}\\
     &=\frac{\partial x}{\partial x}\cdot g_2 + x\cdot\frac{\partial g_2}{\partial x}\\
     &= \exp(2x) + x\cdot 2\exp(2x) \\
     &= (1+2x)\exp(2x).
 \end{align*}
-This shows how forward AD actually uses the chain rule on a sequence of elementary functions with respect to the independent variables, in this case $x$. Backward AD also uses the chain rule, but in the opposite direction. It uses it with respect to dependent variables. The chain rule then has the form
+This shows how forward AD actually uses the chain rule on a sequence of elementary functions with respect to the independent variables, in this case $x$. Backward AD also uses the chain rule, but in the opposite direction; It uses it with respect to dependent variables. The chain rule then has the form
 \begin{equation}
     \label{eq:chainRuleReverse}
     \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right),
 \end{equation}
-for some s to be chosen. In the same example with $f(x) = x\cdot\exp(2x)$ and with the same sequence of elementary functions like in \eqref{eq:BackwardADSeperationSimple} gives the expressions from the chain rule \eqref{eq:chainRuleReverse}
+for some $s$ to be chosen.
+
+If we again choose  $f(x) = x\cdot\exp(2x)$ and uses the same sequence of elementary functions like in Definition \eqref{eq:BackwardADSeperationSimple}, the expressions from the chain rule \eqref{eq:chainRuleReverse} becomes
 \begin{align*}
     \frac{\partial s}{\partial g_3} &= \text{Unknown}\\
     \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} &&\Longleftrightarrow \quad x\cdot \frac{\partial s}{\partial g_3} \\
@@ -210,16 +213,17 @@ The calculation of the derivatives together with a dependency graph can be seen 
 	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-Comparing this to the method of Dual Numbers were we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD - no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of a function. The disadvantage of backward AD is that when we implement this, in differ from what we did in the example above when we did it by hand, we still only want to carry along the function- and the derivative values as we did in forward AD. This means that we have to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD and a bad implementation of this tree will reduce the advantage of backward AD. Also if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$, hence if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reason why we here will have focus on implementing forward AD.
+Comparing this to the method of Dual Numbers from \autoref{sec:DualNumbers} where we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of the function. 
+The disadvantage of backward AD is that to be able carry along the function- and the derivative values as we did in forward AD we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and a bad implementation of this tree will reduce the advantage of backward AD. Also, if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reasons why we will have focus on implementing forward AD.
 
-\subsection{Forward Automatic Differentiation with multiple parameters}
-When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$ and we want to obtain the gradient of $f$. Then the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$ and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this we define the corresponding AD-variables
+\subsection{Forward Automatic Differentiation With Multiple Parameters}
+When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$, and we want to obtain the gradient of $f$. Then, the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
 \begin{equation*}
     [x,(1,0,0)^\top]\hspace{2em},\hspace{2em}
     [y,(0,1,0)^\top]\hspace{2em},\hspace{2em}
     [z,(0,0,1)^\top].
 \end{equation*}
-Each primary AD-variable now not only stores its derivative with respect to itself, but also the gradient with respect to all other primary variables. The operators defined in Equations (\ref{eq:arithmeticOperators}) and the elementary functions in Equations (\ref{eq:elementaryFunctions}) are still valid, but instead of scalar products they are now vector products. As an example let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
+Each primary AD-variable now not only stores its derivative with respect to itself, but also the gradient with respect to all other primary variables. The operators defined in Equations (\ref{eq:arithmeticOperators}) and the elementary functions in Equations (\ref{eq:elementaryFunctions}) are still valid, but instead of scalar products they are now vector products. As an example, let $f(x,y,z) = xyz$ and $x = 1$, $y = 2$ and $z = 3$, then
 \begin{align*}
     xyz &= [1,(1,0,0)^\top]\cdot [2,(0,1,0)^\top]\cdot
     [3,(0,0,1)^\top] \\
@@ -230,7 +234,7 @@ This result is equal to the tuple
 \begin{equation*}
     \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz \hspace{0.5em},\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
-for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually  vector functions and not scalar functions, hence $f: \Re^n \rightarrow \Re^m$. Then it is the Jacobian of $f$ we are interested in
+for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually  vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Then, it is the Jacobian of $f$ we are interested in:
 \begin{align*}
     J  =
     \begin{bmatrix}
@@ -239,23 +243,23 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
     \end{bmatrix}.
 \end{align*}
-The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. The first one is that the primal variables need to be initialized with their Jacobians and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of vector operations as seen above. 
+The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix operations instead of the vector operations seen in the previous examples. 
 
 \section{Applications of Automatic Differentiation}
 \label{sec:ApplicationsAD}
-AD can be used in a wide spectre of applications; common for many of them is that we have a vector or scalar function we want to minimize or find the roots of.
+AD can be used in a wide spectre of applications; common for many of them is that we have a vector or scalar function we want to minimize or find the roots of. This section considers some of the applications where AD can be used -- from solving simple linear systems to solving the Poisson Equation with discrete divergence and gradient operators.
 
-\subsection{The Newton--Raphson Method}
+\subsection{The Newton-Raphson Method}
 The simplest example for finding roots is for a scalar function $f$ with a scalar input $x$. Then the Newton--Raphson method
 \begin{equation*}
     x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)},
 \end{equation*}
-for an initial $x_0$, will converge to a root of $f$ given that $f$ is sufficiently smooth. With AD, this is quite simple to implement as you only have to define the function $f(x)$ and then AD finds $f'(x)$ automatically and you can use the Newton-Raphson method directly. Exactly the same approach can be used to solve linear systems in multiple dimensions. Let us look at the linear system 
+for an initial $x_0$, will converge to a root of $f$ given that $f$ is sufficiently smooth. With AD, this is quite simple to implement as you only have to define the function $f(x)$, and then AD finds $f'(x)$ automatically. You can then use the Newton-Raphson method directly. Exactly the same approach can be used to solve linear systems in multiple dimensions. Let us look at the linear system 
 \begin{equation}
     \textbf{A}\boldsymbol{x} = \textbf{b}.
     \label{eq:linearSystem}
 \end{equation}
-But instead of looking at it like in equation \eqref{eq:linearSystem} we write it on residual form such that
+But instead of looking at it like in equation \eqref{eq:linearSystem}, we write it on residual form such that
 \begin{equation*}
 	\boldsymbol{F}(\boldsymbol{x}) = \textbf{A}\boldsymbol{x} - \boldsymbol{b} = 0 .
 \end{equation*}
@@ -267,30 +271,30 @@ This means that to solve the linear system in Equation \eqref{eq:linearSystem}, 
 Here $J_{\boldsymbol{F}}  (\boldsymbol{x}^n)^{-1}$ is the inverse of the Jacobian of $\boldsymbol{F}$ at $\boldsymbol{x}^n$. 
 
 \subsection{Solving the Poisson Equation}
-For a simple linear system like Equation \eqref{eq:linearSystem} it may seem a bit forced and not necessary to make the effort to use AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver instead. But for numerical application we can with this method easily solve non-linear equations that we obtain from the PDEs by looking at the residual form of the equations we obtain and use the Newton-Raphson method \eqref{eq:newtonRaphsonVector} with AD.  As a preface to introducing how we will do this, consider the Poisson equation
+For a simple linear system like Equation \eqref{eq:linearSystem} it may seem a bit forced and unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver instead. But for numerical applications, we can with this method easily solve non-linear equations obtained from discretization of partial differential equations (PDE's) by looking at the residual form of the equations and use the Newton-Raphson method (Equation \eqref{eq:newtonRaphsonVector}) with AD.  As a preface to introducing how we will do this, consider the Poisson equation
 \begin{equation}
     -\nabla(\textbf{K}\nabla u) = q,
     \label{eq:Poisson}
 \end{equation}
-where \textbf{K} is an diffusion coefficient and we want to find $u$ on $\Omega \in \Re^d$. Numerically this can be done by using a finite volume method. This approach is based on applying conservation laws inside the domain. By dividing the domain into smaller cells, $\Omega_i$, we can instead of looking at the Poisson equation in differential form, integrate it on each cell such that
+where \textbf{K} is an diffusion coefficient and we want to find $u$ on the domain $\Omega \in \Re^d$. Numerically, this can be done by using a finite volume method. This approach is based on applying conservation laws inside the domain. By dividing the domain into a grid of smaller cells, $\Omega_i$, we can instead of looking at the Poisson equation in differential form, integrate it on each cell such that
 \begin{equation}
     \int_{\partial\Omega_i} - \textbf{K} \nabla u \cdot \textbf{n}\, \mbox{ds} = \int_{\Omega_i} q \,\mbox{dA}.
     \label{eq:conservation}
 \end{equation}
-Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so Equation \eqref{eq:conservation} describes the conservation of mass in the cell $\Omega_i$ where total flux in and out of the boundary of $\Omega_i$ is equal to the total production in $\Omega_i$. For simplicity, we define $\textbf{v} = - \textbf{K} \nabla u$ as the flux. As a simple example to begin with, we will consider \autoref{fig:gridTwoCells}, which shows two cells $\Omega_i$ and $\Omega_k$. They both have a value $u_i$ and $u_k$ in the centre of the cell and the boundary, or facet, between the cells is defined as $\Gamma_{i,k}$.
-\begin{figure}[htb]
+Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so Equation \eqref{eq:conservation} describes the conservation of mass in the cell $\Omega_i$, where total flux in and out of the boundary of $\Omega_i$ is equal to the total production in $\Omega_i$. For simplicity, we define $\textbf{v} = - \textbf{K} \nabla u$ as the flux. As a simple example to begin with, we will consider \autoref{fig:gridTwoCells}, which shows two cells $\Omega_i$ and $\Omega_k$. They both have a value $u_i$ and $u_k$ in the centre of the cell, and the boundary, or facet, between the cells is defined as $\Gamma_{i,k}$.
+\begin{figure}[H]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_two_cells.pdf}
-    \caption{}
+    \caption{Figure of two adjacent cells $\Omega_i$ and $\Omega_k$. The average value of the cell is given by $u_i$. The boundary between the cells is $\Gamma_{i,k}$ with value at the centre equal $\Bar{u}_{i,k}$ and outward normal vector $n_{i,k}$}
     \label{fig:gridTwoCells}
 \end{figure}
 
- Now, the flux through the boundary $\Gamma_{i,k}$ can be computed by
+Now, the flux through the boundary $\Gamma_{i,k}$ can be computed by
 \begin{equation}
     v_{i,k} = \int_{\Gamma_{i,k}} \textbf{v}\cdot\textbf{n}_{i,k} \mbox{ds}. 
     \label{eq:fluxOverBoundary}
 \end{equation}
-If we let $L_{i,k}$ be the length of $\Gamma_{i,k}$, then the integral in \eqref{eq:fluxOverBoundary} can be approximated by the midpoint rule with $\tilde{\textbf{v}}_{i,k}$ as the flux on the midpoint of $\Gamma_{i,k}$ 
+If we let $L_{i,k}$ be the length of $\Gamma_{i,k}$, then the integral in \eqref{eq:fluxOverBoundary} can be approximated by the midpoint rule with $\tilde{\textbf{v}}_{i,k}$ as the flux on the midpoint of $\Gamma_{i,k}$: 
 \begin{equation*}
     v_{i,k} \approx L_{i,k}\tilde{\textbf{v}}_{i,k} \cdot \textbf{n}_{i,k} = -L_{i,k}\textbf{K}\nabla \tilde{u}_{i,k} \cdot \textbf{n}_{i,k}.
 \end{equation*}
@@ -316,7 +320,7 @@ By subtracting the two equations for $v_{i,k}$ and moving $T_{i,k}$ and $T_{k,i}
     \end{aligned}
     \label{eq:flux}
 \end{equation}
-we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the gradient of $u$. This is called the two-point flux-approximation (TPFA) \emph{\citep{lieMrstUrl}}. Now that we have an approximation of the flux through the interface between $\Omega_i$ and $\Omega_k$ we get that Equation (\ref{eq:fluxOverBoundary}) can be approximated by 
+we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the gradient of $u$. This is called the two-point flux-approximation (TPFA) \emph{\citep{lieMrstUrl}}. Now that we have an approximation of the flux through the interface between $\Omega_i$ and $\Omega_k$, we get that Equation \eqref{eq:fluxOverBoundary} can be approximated by 
 \begin{equation}
     \sum_k T_{i,k}(u_k - u_i) = q_i, \hspace{3em} \forall \Omega_i \in \Omega,
     \label{eq:PoissonSolvableTwoCells}
@@ -331,20 +335,21 @@ where $q_i$ is the total production in cell $\Omega_i$. Now, we can get a linear
     \end{array}
     \right.
 \end{align*}
-This means we can solve the Poisson equation \eqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. But we still end up with a linear system of equations that we may as well solve without AD. 
+This means we can solve the Poisson equation \eqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. For this simple Poisson Equation we still only end up with a linear system of equations that we may as well solve without AD. But for more complex PDE's and especially more complex grids, the construction of the matrix \textbf{A} becomes more tricky and the ease of using AD, together with the discrete differentiation operators, that we will define in \autoref{sec:DiscreteOperators}, becomes clearer.
 
 \subsection{Discrete Differentiation Operators}
-To show the real elegance of using AD to solve PDEs we want to create a framework in which we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured grid we have.
+\label{sec:DiscreteOperators}
+To show the real elegance of using AD to solve PDEs, we want to create a framework in which we have defined discrete divergence and gradient operators such that we can write the discrete equations we want to solve on a similar form as in the continuous case. We also want to be able to do this no matter how complex and unstructured grid we have.
 
-Instead of the simple two-cell grid we used in \autoref{fig:gridTwoCells}, we now consider a a general polygonal grid. \autoref{fig:partialGrid} illustrates an example, in which all cells are quadrilaterals. To define the discrete divergence and gradient operators, we need some information about the topology of the grid. The grid can be described in terms of three types of objects: cells, facets and vertices. The cells are each $\Omega_i \subset \Omega$. In our two-dimensional case, the facets are simply the lines that delimit each cell, and the vertices are the endpoints of each facet. In addition, we introduce nodes, which are defined points based on the method we use where we want to find the value of the function we search. In the case of \autoref{fig:gridTwoCells} we had two nodes, $u_i$ and $u_k$. Each cell and facet has physical properties like area or length and centroid or centre. Each facet also has a normal vector. 
-\begin{figure}[htb]
+Instead of the simple two-cell grid we used in \autoref{fig:gridTwoCells}, we now consider a a general polygonal grid. \autoref{fig:partialGrid} illustrates an example, in which all cells are quadrilaterals. To define the discrete divergence and gradient operators, we need some information about the topology of the grid. The grid can be described in terms of three types of objects: cells, facets and vertices. The cells are each $\Omega_i \subset \Omega$. In our two-dimensional case, the facets are simply the lines that delimit each cell, and the vertices are the endpoints of each facet. In addition we introduce nodes. In the case demonstrated by \autoref{fig:gridTwoCells} we had two nodes, $u_i$ and $u_k$ and for the finite volume method they are the average value of u on the corresponding cell. Each cell and facet has physical properties like area or length, and centroid or centre. Each facet also has a normal vector. 
+\begin{figure}[H]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_cells_facets.pdf}
-    \caption{}
+    \caption{Figure of a general Polygonal grid with the mapping cell to facets and facet to cells.}
     \label{fig:partialGrid}
 \end{figure}
 
-\autoref{fig:partialGrid} shows how we can introduce two different mappings that explain the relation between the cells and the facets, where the values dependent on cells 5 and 8 are written out. The first $F(c)$, is mapping from cells $c$ to their delimiting facets $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
+\autoref{fig:partialGrid} shows how we can introduce two different mappings that explain the relation between the cells and the facets, where the values dependent on cells 5 and 8 are written out. The first relation, $F(c)$, is the mapping from cells $c$ to their delimiting facets $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
 
 We now have all the physical properties of the grid we used to attain the formulae in equation \eqref{eq:PoissonSolvableTwoCells}. From these, we want to create discrete divergence and gradient operators that correspond to the continuous equivalents for this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the discrete gradient operator for a facet $f$ is defined as 
 \begin{equation}
@@ -364,12 +369,12 @@ where the function $\operatorname{sgn}(f)$ is defined as
     \end{array}
     \right.
 \end{align*}
-Hence, we can now, only based on the topology of the grid, create discrete divergence and gradient operators such that the discrete Poisson equations we want to solve can be written very similar as for the continuous case:
+Hence we can now, only based on the topology of the grid, create discrete divergence and gradient operators, so that the discrete Poisson equations we want to solve can be written very similar to the continuous case
 \begin{align*}
     -\nabla(\textbf{K}\nabla u) - q &= 0 \\
     \textbf{F}(\textbf{u}) = \texttt{divergence}(\textbf{T }\texttt{gradient}(\textbf{u}))-\textbf{q} &= 0.
 \end{align*}
-Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equation. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it, but for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid and although the system becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
+Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equations. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it. But for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid. Although the system then becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
 
  
 

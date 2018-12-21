@@ -1,3 +1,10 @@
 %\let\cleardoublepage\clearpage
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
+This project report gives an introduction to what Automatic Differentiation (AD) is and how it can be used to elegantly solve partial differential equations using a finite volume method and a discretization of the gradient- and divergence operator. 
+
+An AD library has been implemented in the programming language Julia and compared to other AD libraries in Julia and MATLAB. For evaluating the function value and Jacobian of a vector function with three input vectors $x$, $y$ and $z$ the implemented AD library performs well. For vectors with length less than 2000 it perform better than all other AD libraries tested. Tests also indicates that the overhead accompanying for-loops is very little in Julia and this opens up possibilities for more efficient implementations than what have been done in this project.
+
+The AD library has been used to create a flow solver modelling the flow of oil in a reservoir. Benchmarks shows that the 
+
+\todo[inline]{Se på dette fredag}
