@@ -1,2 +1,2 @@
-gradient(x) = C * x
-divergence(x) = -C' * x
+dGrad(x) = C * x
+dDiv(x) = -C' * x

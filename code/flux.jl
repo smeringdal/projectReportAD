@@ -1,1 +1,1 @@
-flux(p) = -(T / μ) * (gradient(p) - g*average(ρ(p))*gradz)
+flux(p) = -(T / μ) * (dGrad(p) - g*average(ρ(p))*gradz)
