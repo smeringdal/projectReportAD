@@ -358,7 +358,7 @@ We now have all the physical properties of the grid we used to attain the formul
 \end{equation}
 where $u[C_i(f)]$ is the value of $u$ at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in equation \eqref{eq:flux}. Let $v_{i,k} = v[f]$, where $f$ is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for cell $c$ is defined as 
 \begin{equation*}
-    \texttt{dDiv}(\textbf{v})[c] = \sum_{f\in f(c)} \operatorname{sgn}(f)\textbf{v}[f]
+    \texttt{dDiv}(\textbf{v})[c] = \sum_{f\in f(c)} \operatorname{sgn}(f)v[f]
 \end{equation*}
 where the function $\operatorname{sgn}(f)$ is defined as 
 \begin{align*}
@@ -374,7 +374,7 @@ The extra \texttt{d} in front of the names are chosen to avoid name collision wi
     -\nabla(\textbf{K}\nabla u) - q &= 0 \\
     \textbf{F}(\textbf{u}) = \texttt{dDiv}(\textbf{T }\texttt{dGrad}(\textbf{u}))-\textbf{q} &= 0.
 \end{align*}
-Here, \textbf{T} is the transmissibility matrix defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equations. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it. But for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid. Although the system then becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
+Here, \textbf{T} is the transmissibility defined in \eqref{eq:transmissibility}. We can see how similar the notation for the discrete equations is to the continuous equations. We can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it. But for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid. Although the system then becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
 
  
 
