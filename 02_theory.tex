@@ -68,9 +68,9 @@ After this computation, we get from the exponential
 \end{align*}
 and lastly from the product rule we get the correct tuple for $f(x)$
 \begin{align*}
-    x\cdot \exp(2x) &= [ \adpair{2}{1}  ]\cdot [\adpair{\exp(4)}{ 2\cdot\exp(4)} ]\\
-    &=[\adpair{2\cdot\exp(4)}{1\cdot \exp(4) + 2\cdot 2\dcot\exp(4)}]\\
-    [\adpair{f}{f_x}] &=[ \adpair{2\cdot\exp(4)}{5\cdot\exp(4)} ].
+    x\cdot \exp(2x) &= [\adpair{2}{1}]\cdot [\adpair{\exp(4)}{2\cdot\exp(4)}]\\
+    &=[\adpair{2\cdot\exp(4)}{1\cdot\exp(4) + 2\cdot 2\cdot\exp(4)}]\\
+    [\adpair{f}{f_x}] & = [ \adpair{2\cdot\exp(4)}{5\cdot\exp(4)}].
 \end{align*}
 This result is equal
 \begin{equation*}
@@ -169,7 +169,7 @@ hence we obtain the correct derivative $f_x$. By now you might wonder why make t
     g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
     \label{eq:DependencyBackwardAD}
 \end{equation}
-Now the derivatives from the chain rule in equation \eqref{eq:chainRuleReverse} becomes \\
+Now the derivatives from the chain rule in Equation \eqref{eq:chainRuleReverse} becomes \\
 \begin{multicols}{3}
     \noindent
     \begin{align*}
@@ -209,8 +209,7 @@ substituting $s$ with $g_5$ yields
 The calculation of the derivatives together with a dependency graph can be seen in \autoref{fig:depency_graph_backward_AD}. This shows that we get all the derivatives of $f(x) = g_5$ with a single function evaluation!
 \begin{figure}[H]
 	\centering
-	    \includegraphics[width=0.7\textwidth]{figures/dependency_graph_backward_AD.pdf}
-	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
+ 	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
 Comparing this to the method of Dual Numbers from \autoref{sec:DualNumbers} where we would have to evaluate $f$ three times, one for each derivative, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of the function. 
