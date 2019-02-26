@@ -216,7 +216,7 @@ Comparing this to the method of Dual Numbers from \autoref{sec:DualNumbers} wher
 The disadvantage of backward AD is that to be able carry along the function- and the derivative values as we did in forward AD we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and a bad implementation of this tree will reduce the advantage of backward AD. Also, if the function is a vector function and not a scalar function, backward AD needs to run $m$ times if $f: \Re^n \rightarrow \Re^m$. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is some of the reasons why we will have focus on implementing forward AD.
 
 \subsection{Forward Automatic Differentiation With Multiple Parameters}
-When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are more efficient ways of doing this than implementing with dual numbers. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method in which we do not need $n$ function evaluations for $n$ input parameters. Say we have a scalar function $f: \Re^n \rightarrow \Re$, and we want to obtain the gradient of $f$. Then, the main idea is when we define our AD-variables, instead of having each AD-variable storing only the derivative with respect to itself, they store their gradient to the corresponding space they are in. This means we have to define what we call our primary variables, which are all the variables in the relevant space. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
+When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are alternative ways of implementing this rather than implementing with dual numbers and evaluating the the function $n$ times. Neidinger describes in \emph{\citet{doi:10.1137/080743627}} a method where we calculate all the derivatives in one function evaluation. To illustrate the method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
 \begin{equation*}
     [\adpair{x}{(1,0,0)^\top}]\hspace{2em},\hspace{2em}
     [\adpair{y}{(0,1,0)^\top}]\hspace{2em},\hspace{2em}
@@ -233,17 +233,94 @@ This result is equal to the tuple
 \begin{equation*}
     \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz ,\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
-for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually  vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Then, it is the Jacobian of $f$ we are interested in:
+for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Neidingers method still applies, only that the primary variables are now vectors and instead of containing the gradient of itself with respect to all the other primary variables, we now have the Jacobian. For a function $f$ the Jacobian with respect to its $n$ primary variables are given as
 \begin{align*}
-    J  =
-    \begin{bmatrix}
+    J_f  =
+    \begin{pmatrix}
         \frac{\partial f_1}{\partial x_1} & \dotsb & \frac{\partial f_1}{x_n}\\
         \vdots & \ddots & \vdots \\
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
-    \end{bmatrix}.
+    \end{pmatrix}.
 \end{align*}
-The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous examples. 
+The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. 
+Going from scalar functions with multiple parameters to vector functions induce to differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous example. As a simple illustration of the differences, consider the vector function $f = 2\cdot \textbf{x}\cdot \textbf{y}$ for the primary variables $\textbf{x},\textbf{y}\in \Re^3$. Again, all multiplications are element-wise. The initialization of the primary variables gives
 
+\begin{multicols}{2}
+    \noindent
+    \begin{align*}
+        \textbf{x} = \left[\adpair{\begin{pmatrix}1\\2\\3
+        \end{pmatrix}}{\begin{pmatrix}
+        1&0&0&0&0&0\\
+        0&1&0&0&0&0\\
+        0&0&1&0&0&0\end{pmatrix}} \right]
+    \end{align*}
+    \begin{align*}
+        \textbf{y} = \left[\adpair{\begin{pmatrix}4\\5\\6
+        \end{pmatrix}}{\begin{pmatrix}
+        0&0&0&1&0&0\\
+        0&0&0&0&1&0\\
+        0&0&0&0&0&1\end{pmatrix}} \right].
+    \end{align*}
+\end{multicols}
+Here we have decided an order of the variables in the Jacobian, and further on we need to be consistent with this order. The function value of $\textbf{x}\cdot\textbf{y}$ is found by normal element-wise multiplication. The Jacobian of $\textbf{x}\cdot\textbf{y}$ is obtained by using the chain rule as defined in \eqref{eq:arithmeticOperators}. The difference is now that we have element-wise multiplication of a vector and a matrix instead of only scalars or scalars and vectors. element-wise multiplication of a vecotor and a matrix corresponds to transforming the vector to an $n\times n$ matrix with the values on the diagonal. The calculations gives
+\begin{align*}
+    \textbf{x}\cdot\textbf{y} &= \left[\adpair{\begin{pmatrix}
+        1\\2\\3
+        \end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        4\\5\\6
+        \end{pmatrix}
+    }{
+        \begin{pmatrix}
+        4&0&0\\
+        0&5&0\\
+        0&0&6\end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        1&0&0&0&0&0\\
+        0&1&0&0&0&0\\
+        0&0&1&0&0&0
+        \end{pmatrix}
+        +
+        \begin{pmatrix}
+        1&0&0\\
+        0&2&0\\
+        0&0&3
+        \end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        0&0&0&1&0&0\\
+        0&0&0&0&1&0\\
+        0&0&0&0&0&1
+        \end{pmatrix}}\right]
+        \\
+        \textbf{x}\cdot\textbf{y} &= \left[\adpair{
+        \begin{pmatrix}
+        4\\10\\18
+        \end{pmatrix}
+        }{
+        \begin{pmatrix}
+        4&0&0&1&0&0\\
+        0&5&0&0&2&0\\
+        0&0&6&0&0&3
+        \end{pmatrix}
+        }\right].
+\end{align*}
+Finally the expression for the vector function $f$ is found by observing that element-wise multiplication between a scalar and an AD-variable corresponds to multiplying every element in that AD-variable with the scalar. This gives
+\begin{align*}
+    f = \left[\adpair{
+        \begin{pmatrix}
+        8\\20\\36
+        \end{pmatrix}
+        }{
+        \begin{pmatrix}
+        8&0&0&2&0&0\\
+        0&10&0&0&4&0\\
+        0&0&12&0&0&6
+        \end{pmatrix}
+        }\right].
+\end{align*}
 \section{Applications of Automatic Differentiation}
 \label{sec:ApplicationsAD}
 AD can be used in a wide spectre of applications; common for many of them is that we have a vector or scalar function we want to minimize or find the roots of. This section considers some of the applications where AD can be used -- from solving simple linear systems to solving the Poisson Equation with discrete divergence and gradient operators.
