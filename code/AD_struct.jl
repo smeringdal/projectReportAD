@@ -1,4 +1,4 @@
-mutable struct AD
+struct AD
     val
     jac
 end
