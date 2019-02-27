@@ -1,5 +1,5 @@
 import Base: +
 function +(A::FAD, B::Number)
-    ## Overload operator
+    return FAD(A.val .+ B, A.jac)
 end
 +(A::Number, B::FAD) = B+A
