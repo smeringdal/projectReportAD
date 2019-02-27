@@ -1,4 +1,4 @@
 import Base: +
-function +(A::AD, B::AD)
+function +(A::FAD, B::FAD)
     ## Overload operator
 end

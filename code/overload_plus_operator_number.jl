@@ -1,5 +1,5 @@
 import Base: +
-function +(A::AD, B::Number)
+function +(A::FAD, B::Number)
     ## Overload operator
 end
-+(A::Number, B::AD) = B+A
++(A::Number, B::FAD) = B+A

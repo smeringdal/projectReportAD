@@ -1,4 +1,4 @@
-function iterate(iter::AD, state = 1)
+function iterate(iter::FAD, state = 1)
     if state > length(iter.val)
         return nothing
     end

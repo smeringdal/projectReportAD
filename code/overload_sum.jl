@@ -1,4 +1,4 @@
 import Base: sum
-function sum(A::AD)
+function sum(A::FAD)
     ## Overload sum
 end
