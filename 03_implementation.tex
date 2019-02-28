@@ -187,7 +187,11 @@ What we immediately observe is that two of the multiplications are unnecessary s
     \item \texttt{SparseJac} -- a struct containing a \texttt{SparseMatrixCSC} matrix.
 \end{itemize}
 Now it is time for Julia's multiple dispatch to shine. Since Julia understands at runtime what type of \texttt{CustomJac} we have, whether it is a \texttt{NullJac}, \texttt{IdentityJac}, \texttt{DiagJac} or \texttt{SparseJac}, we can implement different methods for all possible combinations. Since we in each implementation know what type of matrix we are dealing with, we can optimize the performance. Take the calculation of the Jacobian w.r.t the primary variable \textbf{y} in \eqref{eq:JacobianCalculationY}. First we have a vector element-wise multiplied by a null matrix. The implementation
-
+\lstinputlisting{code/vectorTimesNullJac.jl}
+efficiently knows immidietly that there is no need to do any calculations, the result will be a null matrix of the same size as before. The second calculation is a vector element-wise multiplied by an identity matrix. The result will be a diagonal matrix with the vector on the diagonal. The implementation 
+\lstinputlisting{code/vectorTimesIdentityJac.jl}
+automatically knows this and makes a diagonal Jacobian with the vector on the left hand side without doing any calculations. Finally we have to add a null matrix and a diagonal matrix, and since there is really no need of doing the adding of zero number, the implementation simply returns the diagonal matrix:
+\lstinputlisting{code/nullJacPlusDiagJac.jl}
 
 \section{Benchmarking Automatic Differentiation}
 As mentioned in \autoref{sec:Julia}, Julia already has an AD library called \textit{ForwardDiff} \emph{\citep{ForwardDiff}} that uses forward AD. Hence, it would be interesting to see how the two implementations compare when the functions evaluated are getting larger. As another reference, I have added the AD implementation in the MATLAB Reservoir Simulation Toolbox (MRST) \emph{\citep{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
