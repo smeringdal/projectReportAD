@@ -233,7 +233,10 @@ This result is equal to the tuple
 \begin{equation*}
     \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz ,\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
-for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Neidingers method still applies, only that the primary variables are now vectors and instead of containing the gradient of itself with respect to all the other primary variables, we now have the Jacobian. For a function $f$ the Jacobian with respect to its $n$ primary variables are given as
+for the corresponding $x$, $y$ and $z$ values. 
+\subsection{Forward Automatic Differentiation With Vector Functions}
+\label{sec:FADWithMultipleParameters}
+In numerical applications, as we are dealing with discretizations, the functions we evaluate are usually vector functions and not scalar functions. Hence $f: \Re^n \rightarrow \Re^m$. Neidingers method still applies, only that the primary variables are now vectors and instead of containing the gradient of itself with respect to all the other primary variables, we now have the Jacobian. For a function $f$ the Jacobian with respect to its $n$ primary variables are given as
 \begin{align*}
     J_f  =
     \begin{pmatrix}
@@ -244,24 +247,21 @@ for the corresponding $x$, $y$ and $z$ values. In numerical applications, as we 
 \end{align*}
 The forward AD method described above will be similar for a vector function as it was for a scalar function above, except for two important differences. 
 Going from scalar functions with multiple parameters to vector functions induce to differences. The first one is that the primal variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous example. As a simple illustration of the differences, consider the vector function $f = 2\cdot \textbf{x}\cdot \textbf{y}$ for the primary variables $\textbf{x},\textbf{y}\in \Re^3$. Again, all multiplications are element-wise. The initialization of the primary variables gives
+\begin{equation}
+    \label{def:VectorAD}
+    \textbf{x} = \left[\adpair{\begin{pmatrix}1\\2\\3
+    \end{pmatrix}}{\begin{pmatrix}
+    1&0&0&0&0&0\\
+    0&1&0&0&0&0\\
+    0&0&1&0&0&0\end{pmatrix}} \right],
+    \hspace{5em}
+    \textbf{y} = \left[\adpair{\begin{pmatrix}4\\5\\6
+    \end{pmatrix}}{\begin{pmatrix}
+    0&0&0&1&0&0\\
+    0&0&0&0&1&0\\
+    0&0&0&0&0&1\end{pmatrix}} \right].
+\end{equation}
 
-\begin{multicols}{2}
-    \noindent
-    \begin{align*}
-        \textbf{x} = \left[\adpair{\begin{pmatrix}1\\2\\3
-        \end{pmatrix}}{\begin{pmatrix}
-        1&0&0&0&0&0\\
-        0&1&0&0&0&0\\
-        0&0&1&0&0&0\end{pmatrix}} \right]
-    \end{align*}
-    \begin{align*}
-        \textbf{y} = \left[\adpair{\begin{pmatrix}4\\5\\6
-        \end{pmatrix}}{\begin{pmatrix}
-        0&0&0&1&0&0\\
-        0&0&0&0&1&0\\
-        0&0&0&0&0&1\end{pmatrix}} \right].
-    \end{align*}
-\end{multicols}
 Here we have decided an order of the variables in the Jacobian, and further on we need to be consistent with this order. The function value of $\textbf{x}\cdot\textbf{y}$ is found by normal element-wise multiplication. The Jacobian of $\textbf{x}\cdot\textbf{y}$ is obtained by using the chain rule as defined in \eqref{eq:arithmeticOperators}. The difference is now that we have element-wise multiplication of a vector and a matrix instead of only scalars or scalars and vectors. element-wise multiplication of a vecotor and a matrix corresponds to transforming the vector to an $n\times n$ matrix with the values on the diagonal. The calculations gives
 \begin{align*}
     \textbf{x}\cdot\textbf{y} &= \left[\adpair{\begin{pmatrix}
