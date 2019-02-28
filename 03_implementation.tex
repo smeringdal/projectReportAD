@@ -28,26 +28,166 @@ In short, it seems to be the perfect language for numerical applications and it 
 \label{sec:ImplementationAD}
 When it comes to efficiently implementing AD, there are two factors to consider. Firstly, it must be easy and intuitive to use. Secondly, it must be efficient code as it will be used in computational demanding calculations. A convenient way to store the AD-variables in Julia is to make a structured array (\texttt{struct}) that has two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian: 
 \lstinputlisting{code/AD_struct.jl} 
-The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If the AD-variable is only a scalar, then the \texttt{val} vector is of length one.  When it comes to the Jacobian, there are multiple ways of storing the matrix. Depending on the application, how much, and what type of manipulation of the matrix you are going to do, the choice is based on efficiency and convenience. I will describe two different methods to storing the Jacobian. Both implementations are inspired by two different implementations in MRST \emph{\citep{lieMrstUrl}}. In the first implementation the Jacobian, \texttt{jac}, is represented as a vector of sparse matrices. Each element in the vector is a sparse matrix that represent the Jacobian w.r.t. each primary variable. This implementation gives the freedom to easily work with the Jacobian for just a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I will call \texttt{ForwardAutoDiff}(FAD), which is defined with the following struct:
+The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If the AD-variable is only a scalar, then the \texttt{val} vector is of length one.  When it comes to the Jacobian, there are multiple ways of storing the matrix. Depending on the application, how much, and what type of manipulation of the matrix you are going to do, the choice is based on efficiency and convenience. I will describe two different methods to storing the Jacobian. Both implementations are inspired by two different implementations in MRST \emph{\citep{lieMrstUrl}}. In the first implementation the Jacobian, \texttt{jac}, is represented as a vector of sparse matrices. Each element in the vector is a sparse matrix that represent the Jacobian w.r.t. each primary variable. This implementation gives the freedom to easily work with the Jacobian for just a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I will call \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
 \lstinputlisting{code/FADStruct.jl}
 
 
-To obtain a working AD library we need to implement operators for the FAD struct. The importance of the way you implement the AD operators and elementary functions can be expressed in a short example: Assume you have two FAD variables $x$ and $y$ and that you want to compute the function $f(x,y) = y+\exp(2xy)$. If the implementation is based on making new functions that take in FAD-variables as input parameters, it will for the evaluation of $f$ look something like this: 
+To obtain a working AD library we need to implement operators for the \texttt{FAD} struct. The importance of the way you implement the AD operators and elementary functions can be expressed in a short example: Assume you have two \texttt{FAD} variables $x$ and $y$ and that you want to compute the function $f(x,y) = y+\exp(2xy)$. If the implementation is based on making new functions that take in \texttt{FAD}-variables as input parameters, it will for the evaluation of $f$ look something like this: 
 \begin{center}
     $f$ = \texttt{FADplus}($y$,\texttt{FADexp}(\texttt{FADtimes}(2,\texttt{FADtimes}($x,y$)))).
 \end{center}
-This is clearly not a suitable way to implement AD as it quickly becomes difficult to see what type of expression it is. If you did not know what type of function f is, it would take you quite some time to figure it out. And more importantly, the possibility for human error becomes very large when you have to write unreadable code like this. This approach should be avoided. Lie and Neidinger suggests in \emph{\cite{lieMrstUrl}} and \emph{\cite{doi:10.1137/080743627}} a much more elegant implementation, where instead of making new functions that take in FAD-variables as parameters, one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). This is where the elegance of having a custom FAD struct. In Julia we can use \emph{multiple dispatch} to call our implementation of standard operators and elementary functions when they are used on FAD structs. A quick explanation of \emph{multiple dispatch} that satisfies our needs is that at runtime, the compiler understands what types are given as input for either an operator or a function and chooses the correct method based on this. To demonstrate, this is done by implementing a function \lstinputlisting{code/overload_plus_operator_AD.jl} 
-that overloads the + operator. Here, we import the + operator from Base (which is where the standard functions in Julia lie) and overload it for FAD variables. For compactness purposes I have removed checks and edge cases and only left the method for FAD variables with equal length. The broadcast function add each Jacobian for each primary variable together. This means that this implementation of the operator is only used when there are FAD variables on both sides of the operator. Hence, if $x = 1$, $y = 3$ and then $z = x+y$ is declared, Julia understands that it is not the definition above, but the normal addition for integers it should use. But if $x,y = \texttt{initialize\_FAD}(1,3)$ is declared, so that $x$ and $y$ both are FAD variables, then Julia's multiple dispatch will understand that the new definition of the "+"-operator should be used in the expression $z = x+y$. What we need to remember is that if I now write $z = x + 3$, with $x$ as an FAD variable, Julia will deploy an error message. This is because we also have to implement
+This is clearly not a suitable way to implement AD as it quickly becomes difficult to see what type of expression it is. If you did not know what type of function f is, it would take you quite some time to figure it out. And more importantly, the possibility for human error becomes very large when you have to write unreadable code like this. This approach should be avoided. Lie and Neidinger suggests in \emph{\cite{lieMrstUrl}} and \emph{\cite{doi:10.1137/080743627}} a much more elegant implementation, where instead of making new functions that take in \texttt{FAD}-variables as parameters, one should overload the standard operators (+,-,*,/) and the elementary functions (exp, sin, log, etc.). This is where the elegance of having a custom \texttt{FAD} struct. In Julia we can use \emph{multiple dispatch} to call our implementation of standard operators and elementary functions when they are used on \texttt{FAD} structs. A quick explanation of \emph{multiple dispatch} that satisfies our needs is that at runtime, the compiler understands what types are given as input for either an operator or a function and chooses the correct method based on this. To demonstrate, this is done by implementing a function \lstinputlisting{code/overload_plus_operator_AD.jl} 
+that overloads the + operator. Here, we import the + operator from Base (which is where the standard functions in Julia lie) and overload it for \texttt{FAD} variables. For compactness purposes I have removed checks and edge cases and only left the method for \texttt{FAD} variables with equal length. The broadcast function add each Jacobian for each primary variable together. This implementation of the + operator is only used when there are \texttt{FAD} variables on both sides of the operator. Hence, if $x = 1$, $y = 3$ and then $z = x+y$ is computed, Julia understands that it is not the definition above, but the normal addition for integers it should use. But if $x,y = \texttt{initialize\_FAD}(1,3)$ is declared, so that $x$ and $y$ both are \texttt{FAD} variables, then Julia's multiple dispatch will understand that the new definition of the "+"-operator should be used on the expression $z = x+y$. What we need to remember is that if I now write $z = x + 3$, with $x$ as an \texttt{FAD} variable, Julia will deploy an error message. This is because we also have to implement
 \lstinputlisting{code/overload_plus_operator_number.jl}
-Here, the first function will be used if the + operator is used with an AD variable on the left hand side and a number on the right. The last line is a compact way of writing the opposite function, which will be used when the number is on the right hand side. But as you can see, we do not implement the same thing twice -- we use the function we already have made. When we have implemented all the functions necessary, it gives us the opportunity for the function $f$ above to simply write $f = y+\exp(2*x*y)$ and Julia will understand that it is our implementation of +, * and exp operators that shall be used, and $f$ will become an AD-variable with the correct value and derivatives. 
+Here, the first function will be used if the + operator is used with an \texttt{FAD} variable on the left hand side and a number on the right. The last line is a compact way of writing the opposite function, which will be used when the number is on the right hand side. When we have implemented all the functions necessary, it gives us the opportunity for the function $f$ above to simply write $f = y+\exp(2*x*y)$ and Julia will understand that it is our implementation of + and * operators and exponential function that shall be used, and $f$ will become an \texttt{FAD}-variable with the correct value and derivatives. 
 
-Up until now I have only discussed implementation of AD for scalar variables. But another advantage of Julia's multiple dispatch system is clear if we start looking at vector variables and functions. In some situations, like in \autoref{ch:FlowSolver}, we want to sum over all the elements in the vector. If we look at how we can overload the \texttt{sum} function one might think that we would try something like
+Up until now I have only discussed implementation of \texttt{FAD} for scalar variables. But another advantage of Julia's multiple dispatch system is clear if we start looking at vector variables and functions. In some situations, like in \autoref{ch:FlowSolver}, we want to sum over all the elements in the vector. If we look at how we can overload the \texttt{sum} function one might think that we would try something like
 \lstinputlisting{code/overload_sum.jl}
-which would indeed work, but to exploit Julia's multiple dispatch fully, we can instead overload the \texttt{iterate} function. This function explains how we shall iterate through an AD variable: 
+which would indeed work, a more elegant approach that fully exploit Julia's multiple dispatch, would be to overload the \texttt{iterate} function. This function explains how we shall iterate through an AD variable: 
 \lstinputlisting{code/iterate.jl}
-Now, the built-in \texttt{sum} function will work on AD variables since it knows how to iterate through the variables. When it adds up the values, the "+"-operator we defined above is being used. And not only that! All built-in functions that iterate through the input will also work (given that the functions they use on the variable also are overloaded). As an example, if we now overload the elementary operation /, the Base function \texttt{mean} will also work on AD variables.
+Now, the built-in \texttt{sum} function will work on AD variables since it knows how to iterate through the variables. When it adds up the values, the "+"-operator we defined above is being used. And not only that! All built-in functions that iterate through the input will also work (given that the functions they use on the variable also are overloaded). As an example, if we now overload the division operator as well as the ones talked about above, the Base function \texttt{mean} will also work on \texttt{FAD} variables with no extra work!
 
-When one introduces AD for vectors, one need to discuss how to handle multiplication and division. In mathematical programming languages like MATLAB and Julia, there is a difference between the "*" and ".*" operators. The first operator, "*", is regular vector multiplication, meaning if $v$ is a row vector and $u$ is a column vector, both of length $n$, then $v*u$ is the normal vector product that results in a scalar, and $u*v$ gives an $n\times n$ matrix where each row is $v$ multiplied by the corresponding row value of $u$. An attempt to evaluate $u*u$ will end in an error message saying that "the dimensions does not match matrix multiplication". The ".*" operator however, is the element-wise multiplication operator. This means that if we have regular column vectors like $u$ and $w = v'$, the transpose of $v$, the evaluation of $u.*w$ will be element-wise multiplication of $u$ and $w$, into a new vector of same dimensions as $u$ and $w$. Here one need to make a choice in the implementation of multiplication and division for AD in Julia, because as of now, there are no good ways of overloading any dot operators for custom types such as AD. The Julia issue \emph{\cite{JuliaIssueDot}} from 2017 explains the problems of overloading the element-wise ".*" operator, and that there is no good way of actually doing this. The issue has still not been resolved. With this in mind, and that there will only be used element-wise multiplication in this project, I have decided to implement "*" as element-wise multiplication. This means that if I have written regular multiplication expressions consisting of at least one AD-variable, it is element-wise multiplication that is being executed.
+\subsection{Element-wise and Vector Multiplication}
+When one introduces AD for vectors, one need to discuss how to handle multiplication and division. In mathematical programming languages like MATLAB and Julia, there is a difference between the "*" and ".*" operators. The first operator, "*", is regular vector multiplication, meaning if $v$ is a row vector and $u$ is a column vector, both of length $n$, then $v*u$ is the normal vector product that results in a scalar, and $u*v$ gives an $n\times n$ matrix where each row in $v$ is multiplied by the corresponding row value of $u$. An attempt to evaluate $u*u$ will end in an error message saying that "the dimensions does not match matrix multiplication". The ".*" operator however, is the element-wise multiplication operator. This means that if we have regular column vectors like $u$ and $w = v'$, the transpose of $v$, the evaluation of $u.*w$ will be element-wise multiplication of $u$ and $w$, into a new vector of same dimensions as $u$ and $w$. Here one need to make a choice in the implementation of multiplication and division for AD in Julia, because as of now, there are no good ways of overloading any dot operators for custom types such as AD. The Julia issue \emph{\cite{JuliaIssueDot}} from 2017 explains the problems of overloading the element-wise ".*" operator, and that there is no good way of actually doing this. The issue has still not been resolved. With this in mind, and that there will only be used element-wise multiplication in this project, I have decided to implement "*" as element-wise multiplication. This means that if I have written regular multiplication expressions consisting of at least one AD-variable, it is element-wise multiplication that is being executed.
+
+\subsection{Optimizing \texttt{ForwardAutoDiff}}
+By looking closer at the implementation of the Jacobian in \texttt{FAD} we can find that in some cases there are better approaches to storing the Jacobian that will gain computational efficiency. Before looking closer at the specific situations, I will explain how the \texttt{SparseMatrixCSC} struct is built up and how it works. \texttt{SparseMatrixCSC} stands for \textit{Compressed Sparse Column Sparse Matrix Storage} and according to Julia docs \emph{\citep{SparseMatrixCSC}} the SparseMatrixCSC struct is given as
+\lstinputlisting{code/SparseMatrixCSCStruct.jl}
+It represents a matrix with three vectors and two integers. The integers represents the size of the matrix and the three vectors represents all non-zero elements in the matrix. Two explain how the vectors work, consider the example of a matrix \textbf{A} with the corresponding SparseMatrixCSC struct variables:
+\begin{multicols}{2}
+    \begin{align*}
+        \textbf{A} = \begin{pmatrix}
+        1&0&0&5&0\\
+        0&3&0&6&0\\
+        0&0&0&0&7\\
+        2&4&0&0&0\end{pmatrix}
+    \end{align*}
+    \columnbreak
+    \begin{align*}
+        \texttt{m} &= 4\\
+        \texttt{n} &= 5\\
+        \texttt{colptr} &= [1, 3, 5, 5, 7, 8]\\
+        \texttt{rowval} &= [1, 4, 2, 4, 1, 2, 3]\\
+        \texttt{nzval} &= [1, 2, 3, 4, 5, 6, 7].
+    \end{align*}
+\end{multicols}
+\texttt{nzval} contains all the non-zero elements in \textbf{A}. The order of the numbers is given by column from left to right then row from top to bottom. \texttt{rowval} has the same ordering as \texttt{nzval} and gives the row number to the corresponding value in \texttt{nzval}. \texttt{colptr} contains the information of how many non-zero numbers there are in each column. For column number $i$, the sequence \texttt{colptr}$[i]$:\texttt{colptr}$[i+1]-1$ gives the indices in \texttt{nzval} and \texttt{rowval} that corresponds to values in this column. For matrix A and column number 2 we get the indices
+\begin{equation*}
+    \texttt{colptr}[2]:(\texttt{colptr}[3]-1) \Longrightarrow 3:4,
+\end{equation*}
+which gives row number 2 and 4 and values 3 and 4. For a column with only zero elements, like column three, the sequence becomes
+\begin{equation*}
+    \texttt{colptr}[3]:(\texttt{colptr}[4]-1)\Longrightarrow 5:4,
+\end{equation*}
+which indicates that there are no non-zero elements in this column. 
+
+This way of storing a matrix will decrease both memory usage and computational efficiency dramatically when working with large and sparse matrices compared to storing the full matrix. When performing operations on the matrix, e.g. an element-wise vector matrix  multiplication, the computational gain comes from the opportunity to neglect all zero values. If we store the matrix as a full dense matrix then we have to compute a lot of multiplications that ends up being zero that we with a sparse matrix structure could avoid computing. The method however brings some extra work that consist of doing numerous checks to make sure that we have done the multiplication correctly. Take the example from \autoref{sec:FADWithMultipleParameters} where $f = 2\cdot \textbf{x}\cdot \textbf{y}$ for the primary variables $\textbf{x},\textbf{y}\in \Re^3$ as in Definition \eqref{def:VectorAD}. Initializing the primary variables as \texttt{FAD}-structs gives 
+\begin{multicols}{2}
+    \noindent
+    \begin{align*}
+        \textbf{x} = \left[\adpair{\begin{pmatrix}1\\2\\3
+        \end{pmatrix}}{\left\{\adpair{
+        \begin{pmatrix}
+        1&0&0\\
+        0&1&0\\
+        0&0&1\end{pmatrix}}
+        {\begin{pmatrix}
+        0&0&0\\
+        0&0&0\\
+        0&0&0
+        \end{pmatrix}}\right\}} \right]
+    \end{align*}
+    \begin{align*}
+        \textbf{y} = \left[\adpair{\begin{pmatrix}4\\5\\6
+        \end{pmatrix}}{\left\{\adpair{
+        \begin{pmatrix}
+        0&0&0\\
+        0&0&0\\
+        0&0&0\end{pmatrix}}
+        {\begin{pmatrix}
+        1&0&0\\
+        0&1&0\\
+        0&0&1
+        \end{pmatrix}}\right\}} \right].
+    \end{align*}
+\end{multicols}
+Here I have written out the Jacobians as full matrices for better visualization. In the multiplication of the two \texttt{FAD}-variables, the element-wise multiplication of the values are not interesting and we will focus on how we obtain the new Jacobian for $\textbf{x}\cdot \textbf{y}$. Similarly as in \autoref{sec:FADWithMultipleParameters} we find the new Jacobian using the product rule, but now we can separate the operations into two calculations. First we have the Jacobian for the primary variable \textbf{x}:
+\begin{align*}
+    \begin{pmatrix}
+        4&0&0\\
+        0&5&0\\
+        0&0&6\end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        1&0&0\\
+        0&1&0\\
+        0&0&1
+        \end{pmatrix}
+        +
+        \begin{pmatrix}
+        1&0&0\\
+        0&2&0\\
+        0&0&3
+        \end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        0&0&0\\
+        0&0&0\\
+        0&0&0
+        \end{pmatrix}
+        \Longrightarrow
+        \begin{pmatrix}
+        4&0&0\\
+        0&5&0\\
+        0&0&6
+        \end{pmatrix}.
+\end{align*}
+Then for the primary variable \textbf{y} we obtain the Jacobian
+\begin{equation}
+    \label{eq:JacobianCalculationY}
+    \begin{pmatrix}
+        4&0&0\\
+        0&5&0\\
+        0&0&6\end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        0&0&0\\
+        0&0&0\\
+        0&0&0
+        \end{pmatrix}
+        +
+        \begin{pmatrix}
+        1&0&0\\
+        0&2&0\\
+        0&0&3
+        \end{pmatrix}
+        \cdot
+        \begin{pmatrix}
+        1&0&0\\
+        0&1&0\\
+        0&0&1
+        \end{pmatrix}
+        \Longrightarrow
+        \begin{pmatrix}
+        1&0&0\\
+        0&2&0\\
+        0&0&3
+        \end{pmatrix}.
+\end{equation}
+What we immediately observe is that two of the multiplications are unnecessary since one of the matrices are the null matrix. If we remember that the left matrix in all the calculations above actually is a vector we can see that when the previous Jacobian is diagonal what we actually have is element-wise multiplication between two vectors. And even better, when the previous Jacobian is the identity matrix the product is a diagonal matrix with the left hand side vector on the diagonal. This is where the idea of optimizing \texttt{FAD} comes from. By knowing what type of Jacobian we have at all times we can sometimes take safe shortcuts in our calculations. 
+
+\subsection{Custom Jacobian Automatic Differentiation}
+\texttt{Custom Jacobian Automatic Differentiation}(\texttt{CJAD}) is what I have called the optimized \texttt{FAD}. \textit{Custom Jacobian} comes from having four different types of Jacobians. The structure of \texttt{CJAD} is similar to \texttt{FAD}, except that the Jacobians are in a vector of type \texttt{CustomJac}:
+\lstinputlisting{code/CJAD-struct.jl}
+\texttt{CustomJac} is an abstract type that has four structs that extends it:
+\begin{itemize}
+    \item \texttt{NullJac} -- a struct containing number of rows and columns.
+    \item \texttt{IdentityJac} -- a struct containing one number that gives number of rows and columns.
+    \item \texttt{DiagJac} -- a struct containing a vector with the diagonal values of the struct. The length of the vector equals the number of rows and columns.
+    \item \texttt{SparseJac} -- a struct containing a \texttt{SparseMatrixCSC} matrix.
+\end{itemize}
+Now it is time for Julia's multiple dispatch to shine. Since Julia understands at runtime what type of \texttt{CustomJac} we have, whether it is a \texttt{NullJac}, \texttt{IdentityJac}, \texttt{DiagJac} or \texttt{SparseJac}, we can implement different methods for all possible combinations. Since we in each implementation know what type of matrix we are dealing with, we can optimize the performance. Take the calculation of the Jacobian w.r.t the primary variable \textbf{y} in \eqref{eq:JacobianCalculationY}. First we have a vector element-wise multiplied by a null matrix. The implementation
+
 
 \section{Benchmarking Automatic Differentiation}
 As mentioned in \autoref{sec:Julia}, Julia already has an AD library called \textit{ForwardDiff} \emph{\citep{ForwardDiff}} that uses forward AD. Hence, it would be interesting to see how the two implementations compare when the functions evaluated are getting larger. As another reference, I have added the AD implementation in the MATLAB Reservoir Simulation Toolbox (MRST) \emph{\citep{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
