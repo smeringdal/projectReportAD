@@ -262,7 +262,7 @@ Going from scalar functions with multiple parameters to vector functions induce 
     0&0&0&0&0&1\end{pmatrix}} \right].
 \end{equation}
 
-Here we have decided an order of the variables in the Jacobian, and further on we need to be consistent with this order. The function value of $\textbf{x}\cdot\textbf{y}$ is found by normal element-wise multiplication. The Jacobian of $\textbf{x}\cdot\textbf{y}$ is obtained by using the chain rule as defined in \eqref{eq:arithmeticOperators}. The difference is now that we have element-wise multiplication of a vector and a matrix instead of only scalars or scalars and vectors. element-wise multiplication of a vecotor and a matrix corresponds to transforming the vector to an $n\times n$ matrix with the values on the diagonal. The calculations gives
+Here we have decided an order of the variables in the Jacobian, and further on we need to be consistent with this order. The function value of $\textbf{x}\cdot\textbf{y}$ is found by normal element-wise multiplication. The Jacobian of $\textbf{x}\cdot\textbf{y}$ is obtained by using the chain rule as defined in \eqref{eq:arithmeticOperators}. The difference is now that we have element-wise multiplication of a vector and a matrix instead of only scalars or scalars and vectors. Element-wise multiplication of a vector and a matrix corresponds to transforming the vector to an $n\times n$ matrix with the values on the diagonal. The calculations gives
 \begin{align*}
     \textbf{x}\cdot\textbf{y} &= \left[\adpair{\begin{pmatrix}
         1\\2\\3
