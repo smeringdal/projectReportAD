@@ -28,7 +28,11 @@ In short, it seems to be the perfect language for numerical applications and it 
 \label{sec:ImplementationAD}
 When it comes to efficiently implementing AD, there are two factors to consider. Firstly, it must be easy and intuitive to use. Secondly, it must be efficient code as it will be used in computational demanding calculations. A convenient way to store the AD-variables in Julia is to make a structured array (\texttt{struct}) that has two member variables, \texttt{val} and \texttt{jac}, that stores respectively the value and the corresponding Jacobian: 
 \lstinputlisting{code/AD_struct.jl} 
-The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If the AD-variable is only a scalar, then the implementation can either stick to \texttt{val} being a vector, only of length one, or it can be just a scalar in this specific case. The option where \texttt{val} always is a vector is most consistent and can avoid possible problems that can occur when we do not know what types the AD struct contains at different times. When it comes to the Jacobian, there are multiple ways of storing the matrix. Depending on the application, how much, and what type of manipulation of the matrix you are going to do, the choice is based on efficiency and convenience. I will describe two different methods on how to store the Jacobian. Both implementations are inspired by two different implementations in MRST \emph{\citep{lieMrstUrl}}. In the first implementation the Jacobian, \texttt{jac}, is represented as a vector of sparse matrices. Each element in the vector is a sparse matrix that represent the Jacobian w.r.t. each primary variable. This implementation gives the freedom to easily work with the Jacobian for just a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I will call \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
+The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If the AD-variable is only a scalar, then the implementation can either stick to \texttt{val} being a vector, only of length one, or it can be just a scalar in this specific case. The option where \texttt{val} always is a vector is most consistent and can avoid possible problems that can occur when we do not know what types the AD struct contains at different times. When it comes to the Jacobian, there are multiple ways of storing the matrix. Depending on the application, how much, and what type of manipulation of the matrix you are going to do, the choice is based on efficiency and convenience. I will describe two different methods on how to store the Jacobian. Both implementations are inspired by two different implementations in MRST \emph{\citep{lieMrstUrl}}. 
+
+\subsection{\texttt{ForwardAutoDiff} (\texttt{FAD})}
+\label{sec:FAD}
+In the first implementation, the Jacobian, \texttt{jac}, is represented as a vector of sparse matrices. Each element in the vector is a sparse matrix that represent the Jacobian w.r.t. each primary variable. This implementation gives the freedom to easily work with the Jacobian for just a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I have called \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
 \lstinputlisting{code/FADStruct.jl}
 
 
@@ -192,23 +196,55 @@ efficiently knows immediately that there is no need to do any calculations, the 
 \lstinputlisting{code/vectorTimesIdentityJac.jl}
 This is the first calculation we have seen that will contribute to make \texttt{CJAD} more efficient than \texttt{FAD}. To finish the calculations in \eqref{eq:JacobianCalculationY}, we finally have to add a null matrix and a diagonal matrix. Since there is really no need of doing this adding, the implementation simply returns the diagonal matrix:
 \lstinputlisting{code/nullJacPlusDiagJac.jl}
-For the same reason as explained for the element-wise multiplication between a vector and a \texttt{NullJac} matrix, this implementation will not have any big advantages compared to the \texttt{SparseMatrixCSC} implementation used in \texttt{FAD} as it also will quickly figure out the needlessness of the calculation.
+For the same reason as explained for the element-wise multiplication between a vector and a \texttt{NullJac} matrix, this implementation will not have any big advantages compared to the \texttt{SparseMatrixCSC} implementation used in \texttt{FAD} as it will also quickly figure out the needlessness of the calculation.
+
+Another type of calculation that \texttt{CJAD} will be more efficient than \texttt{FAD}'s \texttt{SparseMatrixCSC} implementation is when 
 
 \subsection{Efficient Code VS Readable and Elegant Code}
-There is usually a fine balance between writing efficient code and readable/elegant code. Sometimes you have the opportunity to do both, but often you have to choose which of them you want to give most focus. In the end of \autoref{sec:ImplementationAD} I explained how we can elegantly implement the \texttt{sum} function, and all other built-in functions that iterate through the AD-variables, only by implementing the \texttt{iterate} function. This is a very elegant use of Julia's multiple dispatch system as we get a lot of functionality "for free". The downside however is that we loose computational efficiency that we could achieve by implementing the \texttt{sum} function ourselves. Consider the previous approach where we only have implemented the \texttt{iterate} function and we use the \texttt{Base.sum} function (The standard \texttt{sum} function in Julia) to sum up the values in the AD-variable. For each iteration in the addition we access row $i$ in the AD-variable and add it to the total sum. This consist of extracting row $i$ from each Jacobian and creating a new AD-variable only consisting of row $i$. And this we do for all the rows! It is clear that we can make this summation more efficient by instead of taking each row by row and add it to the final sum, we can sum up the columns in one go:
+There is usually a fine balance between writing efficient code and readable/elegant code. Sometimes you have the opportunity to do both, but often you have to choose which of them you want to give most focus. In the end of \autoref{sec:FAD} I explained how we can elegantly implement the \texttt{sum} function, and all other built-in functions that iterate through the \texttt{FAD}-variables, only by implementing the \texttt{iterate} function. This is a very elegant use of Julia's multiple dispatch system as we get a lot of functionality "for free". The downside however is that we loose potential computational efficiency that we could achieve by implementing the \texttt{sum} function ourselves. Let us define a random function $\psi$ where the AD-representation and the \texttt{sum} of $\psi$ is given by
+\begin{multicols}{2}
+    \noindent
+    \begin{align*}
+        \textbf{$\psi$} = \left[\adpair{\begin{pmatrix}1\\2\\3
+        \end{pmatrix}}{\left\{\adpair{
+        \begin{pmatrix}
+        3&0&1\\
+        2&1&0\\
+        0&0&8\end{pmatrix}}
+        {
+        \begin{pmatrix}
+        1&0&0\\
+        0&1&0\\
+        0&0&1\end{pmatrix}}\right\}}
+        \right]
+    \end{align*}
+    \begin{align*}
+    \\
+        \texttt{sum}(\textbf{$\psi$}) = \left[\adpair{6}{
+        \left\{\adpair{
+        \begin{pmatrix}
+        5&1&9\\
+        \end{pmatrix}}{
+        \begin{pmatrix}
+        1&1&1\\
+        \end{pmatrix}}\right\}}
+        \right].
+    \end{align*}
+\end{multicols}
+Consider now the previous approach where we only have implemented the \texttt{iterate} function and we use the \texttt{Base.sum} function (The standard \texttt{sum} function in Julia) to sum up the values in $\psi$. For each iteration in the addition we access row $i$ in the $\psi$ and add it to the total sum. This consist of extracting row $i$ from each Jacobian and creating a new AD-variable only consisting of row $i$. This leads to a lot of extra memory allocation, and in the case for $\psi$ we have to allocate memory for three new AD-variables. This extra allocation can avoided by doing the summation of each column at once instead of operate on a row to row basis. For \texttt{CJAD} this can be done with the following implementation of \texttt{sum}:
 \lstinputlisting{code/sum.jl}
-Instead of retrieving each row, one by one, like we did using \texttt{Base.sum}, we now add up each column in one go. \texttt{colSum} is a function implemented in each extended type of \texttt{CustomJac} that sums up all the columns in the Jacobians and returns a $1\times n$ matrix. Here $n$ is a varying number depending on the space for the relevant primary variable. For \texttt{NullJac} the function simply returns a $1\times n$ null matrix, for \texttt{IdentityJac} a $1\times n$ matrix containing only ones, for \texttt{DiagJac} a $1\times n$ matrix which is the transposed of the diagonal vector, and lastly for \texttt{SparseJac} it returns a $1\times n$ matrix where each column is added together. To check that this new \texttt{sum} function actually is more efficient, we can use the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. This gives us the number of allocations and memory used. By creating a \texttt{CJAD}-variable of length 400 and consisting of the four different Jacobian types(all $400\times 400$ with random values), we can compare how efficient the two methods sum up the \texttt{CJAD}-variable. The result is displayed in \autoref{tab:differentSumFunctions} and shows that even though the method of only implementing the \texttt{iterate} function is elegant to obtain the \texttt{sum} function, it can be much more efficient by implementing it specifically.
+Instead of retrieving each row, one by one, like we did using \texttt{Base.sum}, we now add up each column in one go. \texttt{colSum} is a function implemented in each extended type of \texttt{CustomJac} that sums up all the columns in the Jacobians and returns a $1\times n$ matrix. Here $n$ is a number depending on the space for the relevant primary variable($n_\psi = 3$). For \texttt{NullJac} the function simply returns a $1\times n$ null matrix, for \texttt{IdentityJac} a $1\times n$ matrix containing only ones, for \texttt{DiagJac} a $1\times n$ matrix which is the transposed of the diagonal vector, and lastly for \texttt{SparseJac} it returns a $1\times n$ matrix where each column is added together. To check that this new \texttt{sum} function actually is more efficient, we can use the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. This gives us the number of allocations and memory used. By creating a random \texttt{CJAD}-variable of length 400 with all of the four different Jacobian types(all $400\times 400$ with random values), we can compare how efficient the two methods sum up the \texttt{CJAD}-variable. The result is displayed in \autoref{tab:differentSumFunctions} and shows that even though the method of only implementing the \texttt{iterate} function is elegant to obtain the \texttt{sum} function, it can be much more efficient both in memory allocation and speed by implementing it specifically.
 
 \begin{table}[H]
     \centering
-    \caption{Table with the number of allocations and memory usage spent by summing a random \texttt{CJAD}-variable of length 400 with two different summation methods.}
+    \caption{Table with the number of allocations, memory usage and speed spent by summing a random \texttt{CJAD}-variable of length 400 with two different summation methods.}
     \label{tab:differentSumFunctions}
     \def\arraystretch{1.5}
-    \begin{tabular}{ccc}
-    \textbf{Function} & \textbf{Number of Allocations} & \textbf{Kilobytes of Memory Used} \\
+    \begin{tabular}{cccc}
+    \textbf{Function} & \textbf{Number of Allocations} & \textbf{Kilobytes of Memory Used} & \textbf{Microseconds for Evaluation} \\
         \hline
-         \texttt{sum} & 40 & 79 \\  
-         \texttt{Base.sum} & 28371 & 19 597\\ 
+         \texttt{sum} & 40 & 79 & $\approx$80 \\  
+         \texttt{Base.sum} & 28371 & 19 597 & $\approx$ 60 000\\ 
          \hline
     \end{tabular}
 \end{table}
