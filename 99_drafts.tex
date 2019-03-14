@@ -7,3 +7,6 @@ Profiling is an effective method to obtain overview of where the bottlenecks lie
 
 \section{Vectorization vs Non-vectorization}
 \emph{\citep{Vectorization}} explains how Julia is faster at executing devectorized code compared to vectorized code.
+
+\emph{\citep{Dot_vectorization}}
+Ordinary vectorized code is fast, but not as fast as a hand-written loop (assuming loops are efficiently compiled, as in Julia) because each vectorized operation generates a new temporary array and executes a separate loop, leading to a lot of overhead when multiple vectorized operations are combined.
