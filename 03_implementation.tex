@@ -302,27 +302,29 @@ This example is for explaining purposes only and the functions are not meant to 
 \lstinputlisting{code/devectorizedFunctionEx.jl}
 According to White, this should be the fastest way of obtaining $h(x,y)$. Secondly we have the method of vectorizing the functions $f$ and $g$ such that we can call the functions with vectors and they will be performed element-wise to the input variables. I have called this method \texttt{dotsInside}:
 \lstinputlisting{code/dotsInsideEx.jl}
-Lastly we do not vectorize the functions $f$ and $g$ but when we call them with the
+Lastly we do not vectorize the functions $f$ and $g$ but when we call them with the vectors $x$ and $y$, we use the dot operators on the functions to tell the Julia compiler that the functions should be executed element-wise on the input parameters. I have called this method \texttt{dotsOutside}:
 \lstinputlisting{code/dotsOutsideEx.jl}
+To separate the three methods, I have calculated $h(x,y)$ 1000 times for random $x$ and $y$ vectors of length 100 000 and evaluated the performance using the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. The results can be seen in \autoref{tab:dotOperator}.
 
-Ordinary vectorized code is fast, but not as fast as a hand-written loop (assuming loops are efficiently compiled, as in Julia) because each vectorized operation generates a new temporary array and executes a separate loop, leading to a lot of overhead when multiple vectorized operations are combined.
+
+%Ordinary vectorized code is fast, but not as fast as a hand-written loop (assuming loops are efficiently compiled, as in Julia) because each vectorized operation generates a new temporary array and executes a separate loop, leading to a lot of overhead when multiple vectorized operations are combined.
 
 \begin{table}[H]
     \centering
-    \caption{}
+    \caption{Table  with  the  number  of  allocations,  memory  usage  and  speed  spent  by  summing  evaluating $h(x,y) = \exp(x)\cdot\log(y)$ 1 000 times for three different methods. $x$ and $y$ are random vectors of length 100 000.}
     \label{tab:dotOperator}
     \def\arraystretch{1.5}
     \begin{tabular}{cccc}
-    \textbf{Function} & \textbf{Number of Allocations} & \textbf{Megabytes} & \textbf{Seconds} \\
+    \textbf{Method} & \textbf{Number of Allocations} & \textbf{Megabytes} & \textbf{Seconds} \\
         \hline
-         \texttt{devectorized} & 2000 & 789 & 2.571 \\
-         \texttt{dotsInside} & 6000 & 2 405 & 3.252 \\ 
-         \texttt{dotsOutside} & 2000 & 789 & 2.551 \\  
+         \texttt{devectorized} & 2000 & 789 & 2.104 \\
+         \texttt{dotsInside} & 6000 & 2 405 & 2.704 \\ 
+         \texttt{dotsOutside} & 2000 & 789 & 2.121 \\  
          \hline
     \end{tabular}
 \end{table}
+The \texttt{devectorized} and the \texttt{dotsOutside} methods perform  identically while the \texttt{dotsInside} have three times the number of allocations, and memory used. It is also slower than the two other methods. This result confirms what Steven G. Johnson explains in \emph{\cite{MoreDotsJuliaBlog}} where he says that the problem with vectorized operations is that it generates new temporary arrays for each operation and executes it in a separate loop. This means that for expressions where 
 
-\todo[inline]{Skrive om vektorisert vs ikke? Se drafts}
 \section{Benchmarking Automatic Differentiation}
 As mentioned in \autoref{sec:Julia}, Julia already has an AD library called \textit{ForwardDiff} \emph{\citep{ForwardDiff}} that uses forward AD. Hence, it would be interesting to see how the different implementations compares when the functions evaluated are getting larger. As another reference, I have added the AD implementation in the MATLAB Reservoir Simulation Toolbox (MRST) \emph{\citep{mrstHomepage}} to the benchmark, to see how the Julia implementations compare to an optimized AD tool in MATLAB. To benchmark the efficiency of the different AD tools, I have evaluated the vector function $f: \Re^{n\times 3} \rightarrow \Re^n $ where
 \begin{equation}
