@@ -306,9 +306,6 @@ Lastly we do not vectorize the functions $f$ and $g$ but when we call them with 
 \lstinputlisting{code/dotsOutsideEx.jl}
 To separate the three methods, I have calculated $h(x,y)$ 1000 times for random $x$ and $y$ vectors of length 100 000 and evaluated the performance using the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. The results can be seen in \autoref{tab:dotOperator}.
 
-
-%Ordinary vectorized code is fast, but not as fast as a hand-written loop (assuming loops are efficiently compiled, as in Julia) because each vectorized operation generates a new temporary array and executes a separate loop, leading to a lot of overhead when multiple vectorized operations are combined.
-
 \begin{table}[H]
     \centering
     \caption{Table  with  the  number  of  allocations,  memory  usage  and  speed  spent  by  summing  evaluating $h(x,y) = \exp(x)\cdot\log(y)$ $1\hspace{0.2em}000$ times for three different methods. $x$ and $y$ are random vectors of length $100\hspace{0.2em}000$.}
@@ -325,7 +322,7 @@ To separate the three methods, I have calculated $h(x,y)$ 1000 times for random 
 \end{table}
 The \texttt{devectorized} and the \texttt{dotsOutside} methods perform  identically while the \texttt{dotsInside} have three times the number of allocations, and memory used. \texttt{dotsInside} is also slower than the two other methods. This result confirms what Steven G. Johnson explains in \emph{\cite{MoreDotsJuliaBlog}}, where he says that the problem with vectorized operations is that can generate new temporary arrays for each operation and that every operation is executed in a separate loop. This means that when Julia compiles the program and translates the vectorized code into devectorized code, it will compute the \texttt{dotsInside} method similar to the following code:
 \lstinputlisting{code/vectorizedOperation.jl}
-The compiler does this because it is not obvious for it that all the operations are element-wise. As a consequence it has to allocate three new arrays compared to the single new array in the \texttt{devectorized} method. However, with the \texttt{dotsOutside} method the compiler understands that all the operations in the expression are vectorized operations and we get what Johnson calls \textit{loop fusion}. This essentially means that Julia devectorize the \texttt{dotsOutside} method into the \texttt{devectorized} method. And since Julia do not call low level code like C to perform its vectorized code, the performance of \texttt{devectorized} and \texttt{dotsOutside} will be similar. Another advantage of using the dot operator like in \texttt{dotsOutside} is that we do not have to define if a function is vectorized or not. In other words, $f$ and $g$ can be used as functions for vectors and scalars, we specify what type of use we want when we call the function. This leads to more readable code, as we do not have to check whether a function is written for vectorization or not.
+The compiler does this because it does not understand that all the operations are element-wise. As a consequence it has to allocate three new arrays compared to the single new array in the \texttt{devectorized} method. However, with the \texttt{dotsOutside} method the compiler understands that all the operations in the expression are vectorized operations and we get what Johnson calls \textit{loop fusion}. This essentially means that Julia devectorize the \texttt{dotsOutside} method into the \texttt{devectorized} method. And since Julia do not call low level code like C to perform its vectorized code, the performance of \texttt{devectorized} and \texttt{dotsOutside} will be similar. Another advantage of using the dot operator like in \texttt{dotsOutside} is that we do not have to define if a function is vectorized or not. In other words, $f$ and $g$ can be used as functions for vectors and scalars, we specify what type of use we want when we call the function. This leads to more readable code, as we do not have to check whether a function is written for vectorization or not.
 
 So what are the consequences for the implementation of \texttt{CJAD}? The result from \autoref{tab:dotOperator} implies that as long as we write all our vectorized code like the \texttt{dotsOutside} method or in such a manner that it is obvious for the compiler that it is only vectorized operations involved, then we will have the same computational efficiency as for devectorized code. More specifically for the \texttt{CJAD} implementation, we often have a vector that is added/subtracted/divided/multiplied with another vector, and then the vectorized implementation will have the same computational efficiency as the devectorized. Since devectorized code is less readable, the implementation will consist of vectorized code for readability.
 
@@ -339,20 +336,9 @@ and $x,y,z \in \Re^n$. \autoref{fig:benchmarkAD} shows how computational time fo
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width = \textwidth]{figures/benchmark_all_ADs.pdf}
-        \caption{}
-        \label{fig:benchmarkAllADs}
-    \end{subfigure}
-    \begin{subfigure}[t]{0.49\textwidth}
-        \centering
-        \includegraphics[width = \textwidth]{figures/benchmark_long_vectors_4.pdf}
-        \caption{}
-        \label{fig:benchmarkLongVectors}
-    \end{subfigure}
+    \includegraphics[width = 0.9\textwidth]{figures/benchmark_all_ADs.pdf}
     \caption{Computational time for calculating the value and Jacobian of $f$ in Equation \eqref{eq:benchmarkFunction} as a function of length of the input vectors.}
-    \label{fig:benchmarkAD}
+    \label{fig:benchmarkADVectorFunction}
 \end{figure}
 In \autoref{fig:benchmarkAllADs} we have four different graphs. The analytic graph is simply the evaluation the analytic functions $f(x,y,z)$, $f_x$, $f_y$ and $f_z$. \textit{ForwardDiff} is the AD package in Julia, MRST is the AD tool implemented in MATLAB and \textit{ForwardAutoDiff} is the AD tool I have implemented in Julia. The first thing you observe is that \textit{ForwardDiff} scales very badly as n becomes large. This is because it creates and works with the full Jacobian matrix as discussed in \autoref{sec:Julia}. For $f(x,y,z)$ this will be a $3n \times 3n$ matrix which is a matrix with more than 3 billion elements for the largest values of $n$. We can also observe that for small vectors, MRST and \textit{ForwardAutoDiff} have much more overhead than \textit{ForwardDiff} and the analytic solution. This makes them slower for small $n$, but as $n$ grows, this overhead becomes more negligible. 
 
