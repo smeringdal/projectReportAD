@@ -27,12 +27,13 @@ where $\rho_r = 850\text{kg}/\text{m}^3$ and $c$ is a constant controlling how f
     \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures/flow_solver_pore-volume.eps}
         \caption{The pore volume of the rock in a cell as a function of pressure.}
-        \label{fig:flowSolverDensity}
+        \label{fig:flowSolverPoreVolume}
+        
     \end{subfigure}
     \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures/flow_solver_density.eps}
         \caption{The density of the oil in the reservoir plotted as a function of pressure.}
-        \label{fig:flowSolverPoreVolume}
+        \label{fig:flowSolverDensity}
     \end{subfigure}
     \caption{}
 \end{figure}
@@ -132,7 +133,7 @@ Note the different intervals for the color bar in \autoref{fig:flowSolverResult}
 
 When it comes to solving the residual equations with the Newton-Raphson method, it is interesting to have a look at how the Jacobian of $\boldsymbol{F}$ looks like. \autoref{fig:flowSolverJacobian} shows the structure of the Jacobian. The first impression is that the matrix is very sparse. Except from a few nonzero points in row 1001 and column 1001 because of the well, the Jacobian consist of 7 diagonals with nonzero elements and the rest of the elements being 0. As there are only 6419 non-zero elements out of more than 1 million matrix elements, it is clear that storing the full $1002\times 1002$ matrix will be very inefficient.
 
-As explained in \autoref{sec:ApplicationsAD}, the different types of AD mentioned store the Jacobians differently. In  \textit{ForwardAutoDiff} and MRST's implementations of AD, the Jacobians are stored as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example, this is a lot more efficient than storing the full $1002\times 1002$ Jacobian as  \textit{ForwardDiff} does.
+As explained in \autoref{ch:Implementation}, the different types of AD mentioned store the Jacobians differently. Both \texttt{FAD}, \texttt{CJAD} and the two AD implementations in MRST, will, at least eventually, store the Jacobians as a list of sparse matrices where each Jacobian element in the list is the Jacobian with respect to one primary variable. In this example, this is a lot more efficient than storing the full $1002\times 1002$ Jacobian as  \texttt{ForwardDiff} does.
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/flowSolver_Jacobian.eps}
@@ -147,18 +148,30 @@ The difference in implementation of the Jacobian should make a big impact on the
     \label{tab:FlowSolverSpeedTest}
     \def\arraystretch{1.5}
     \begin{tabular}{ccccc}
-    \textbf{Number of cells} & \textbf{ForwardDiff} & \textbf{ForwardAutoDiff} & \textbf{MRST} & $\frac{\textbf{ForwardAutoDiff}}{\textbf{MRST}}$\\
+    \textbf{Number of cells} & \textbf{ForwardDiff} & \textbf{FAD} & \textbf{CJAD} & \textbf{MRST}\\
         \hline
-         $10\times10\times10$ & 71.5s & 2.3s & 1.9s & 1.21 \\  
-         $20\times20\times20$ & ~ & 31.9s & 23.4s & 1.36\\ 
-         $30\times30\times30$ & ~ & 188.8s & 147.8s & 1.28\\ \hline
+         $10\times10\times10$ & 71.5s & 2.1s & 1.6s & 1.8s  \\  
+         $20\times20\times20$ & ~ & 25.5s & 22.5s & 22.8s \\ 
+         $30\times30\times30$ & ~ & 158.5s & 133.5s & 133.6s \\ \hline
     \end{tabular}
 \end{table}
-For 10 cells in each spatial direction it is clear that what I assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true; The  \textit{ForwardDiff} method takes much longer time than  \textit{ForwardAutoDiff} and MRST. Since  \textit{ForwardDiff} already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. According to the results in \autoref{tab:FlowSolverSpeedTest}, MRST is a bit faster than  \textit{ForwardAutoDiff}. We can also see from the column farthest to the right that the ratio between time spent using MRST and  \textit{ForwardAutoDiff} stays approximately constant as the complexity of the problem grows. This indicates that the two different solvers scales equally. It is, although, not possible to say if it is the AD or the linear solver part that makes the solver in MATLAB faster than the one in Julia. To get a better indication of what part of the code makes the difference, I have tested the speed of the linear solvers solving the system \textbf{Ax} = \textbf{b} in MATLAB and Julia. The built in linear solvers use different methods based on the structure of the matrix. Hence, to make the test as relevant as possible, I have used the Jacobian from the first step of the flow solver as the matrix \textbf{A}. The \textbf{b} vector is a randomized vector of values between 0 and 1. The results for the three different discretizations with 10, 20 and 30 cells in each spatial direction can be seen in \autoref{fig:benchmarkLinearSolver}. 
-\begin{figure}[H]
+For 10 cells in each spatial direction it is clear that what I assumed based on the structure of the Jacobian in \autoref{fig:flowSolverJacobian} is true; The  \texttt{ForwardDiff} method takes much longer time than  \texttt{FAD}, \texttt{CJAD}  and \texttt{MRST}. Since  \textit{ForwardDiff} already spends over a minute for $10\times 10\times 10$ cells, it is omitted for finer discretizations. \texttt{MRST\_diagonal} is not presented here because there is a bug that cause the method to fail for this specific example. \todo{Finne ut hva dette er slik at det får kjørt?} According to the results in \autoref{tab:FlowSolverSpeedTest}, \texttt{MRST} is a bit faster than  \texttt{FAD}, but \texttt{CJAD} and \texttt{MRST} are very similar. 
+
+It is, although, still some uncertainty in these numbers as we do not know if the linear solver in MATLAB and Julia perform equally well. In addition, another factor that can effect the result is that for the current hardware these benchmarks are running on, the computations are so demanding that the hardware becomes warm. This can cause the performance of the hardware to decrease and ruin the test results. To remove the uncertainty of both the linear solver and the hardware heating up, we can perform another benchmark. Instead of solving the linear system \texttt{f.jac\textbackslash f.val} and continuing to the next Newton-Raphson iteration until it converges and then onto a new time step, we only assemble the first residual function multiple times. In this way we only benchmark the AD part of the problem. The test is still relevant as the structure of each function will be equal for all time steps, only that there will be other values. And since the time the computer uses to calculate the residual function value and Jacobian will not depend on what type of numbers we have, but only on the structure of matrices in the Jacobians. Since the structure is the same throughout the whole simulation this benchmark will still be relevant to figure out which AD-implementation is best to solve this specific problem. \autoref{tab:FlowSolverAssemblyTest} shows the three methods assembling the first residual function of the simulation 100 times.
+\begin{table}[htb]
     \centering
-    \includegraphics[width = 0.9\textwidth]{figures/benchmark_linear_solvers.pdf}
-    \caption{Computational time for solving the system \textbf{Ax} = \textbf{b} for \textbf{x}$\in\Re^{n}$ and \textbf{A} = \textbf{J}, the Jacobian from the first step in the flow solver.}
-    \label{fig:benchmarkLinearSolver}
-\end{figure}
-We can see that the linear solvers perform very similar for all three cases, with MATLAB having small victories in computation time for 10 and 20 cells and Julia for 30. With this in mind, we can say that the linear solvers in MATLAB and Julia perform so similar that it is a valid assumption to assume that they perform equally well. Hence the speed differences in \autoref{tab:FlowSolverSpeedTest} is most likely because of speed differences in the AD-tools. This means that for the equations in the "Single-phase Compressible AD Solver" example, the \textit{ForwardAutoDiff} implementation is approximately 30\% slower than the AD tool in MRST.
+    \caption{Table with speed benchmarks of different AD methods assembling the "Single-Phase Compressible AD Solver" residual function 100 times for different discretizations.}
+    \label{tab:FlowSolverAssemblyTest}
+    \def\arraystretch{1.5}
+    \begin{tabular}{cccc}
+    \textbf{Number of cells} & \textbf{FAD} & \textbf{CJAD} & \textbf{MRST}\\
+        \hline
+         $10\times10\times10$ & 0.9s & 0.4s & 0.6s  \\  
+         $20\times20\times20$ & 9.3s & 4.0s & 3.6s \\ 
+         $30\times30\times30$ & 44.2s& 17.2s& 16.5s \\ \hline
+    \end{tabular}
+\end{table}
+It shows the same tendency as \autoref{tab:FlowSolverSpeedTest}, where \texttt{CJAD} and \texttt{MRST} are considerable faster than \texttt{FAD}. However, in this benchmark \texttt{MRST} is a bit faster than \texttt{CJAD} for the highest number of cells. There are however small differences and since there are some uncertainty in benchmarking computational speed on computers, a safe conclusion is that for this "Single-Phase Compressible AD Solver" example, the \texttt{MRST}- and \texttt{CJAD} implementation perform equally good.
+
+
+\todo[inline]{Se om det går an å bruke dette kapittelet som en overgang til lokal AD.}
