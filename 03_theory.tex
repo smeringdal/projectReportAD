@@ -344,6 +344,7 @@ This means that to solve the linear system in Equation \eqref{eq:linearSystem}, 
 Here, $J_{\boldsymbol{F}}  (\boldsymbol{x}^n)^{-1}$ is the inverse of the Jacobian of $\boldsymbol{F}$ at $\boldsymbol{x}^n$. 
 
 \subsection{Solving the Poisson Equation}
+\label{sec:poissonEq}
 For a simple linear system like Equation \eqref{eq:linearSystem} it may seem a bit forced and unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver. But for applications to the numerical solution of partial differential equations (PDEs), this approach greatly simplifies the process of (linearizing and) assembling the linear systems that appear when you solve the (non)linear system of discretized equations. Indeed, using Equation \eqref{eq:newtonRaphsonVector} with AD, all you have to do is implement the discretized equations on residual form.  As a preface to introducing how we will do this, we consider the Poisson equation
 \begin{equation}
     -\nabla(\textbf{K}\nabla u) = q,
