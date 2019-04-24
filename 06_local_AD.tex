@@ -17,7 +17,7 @@ Now that \texttt{FlowSystem} stores the residual values and its Jacobian, we nee
 \lstset{numbers=left}
 \lstinputlisting{code/assembleFlowSystem!.jl}
 \lstset{numbers=none}
-\texttt{assembleFlowSystem!} first resets \texttt{eqVal} and \texttt{GlobalJac} such that the structures are equal, but all the values are zero. Then the function begin traversing through the grid and for every cell it iterates through all neighbouring cells. The \texttt{eqVal} and \texttt{globalJac} variables in the \texttt{FlowSystem} struct is updated in line number 6, 8 and 10 in the inner loop. As a reminder, the residual function that \texttt{FlowSystem} will be updated with is the \texttt{presEq} function defined in \autoref{sec:setupGovEq}:
+\texttt{assembleFlowSystem!} first resets \texttt{eqVal} and \texttt{GlobalJac} such that the structures are equal, but all the values are zero. Then the function begin traversing through the grid and for every cell it iterates through all neighbouring cells. The \texttt{eqVal} and \texttt{globalJac} variables in the \texttt{FlowSystem} struct is updated in line number 6, 8 and 10 in the inner loop. As a reminder, the residual functions that \texttt{FlowSystem} will be updated with is the \texttt{presEq},  function defined in \autoref{sec:setupGovEq}:
 \lstinputlisting{code/presEq.jl}
 In line number 6, when \texttt{fromCell} and \texttt{toCell} are equal, the first term in the sum in \texttt{presEq}, or the backward Euler term, is calculated. This is performed in an outer function \texttt{timeDerivative} that returns a \texttt{LAD} struct:
 \lstinputlisting{code/timeDerivative.jl}
