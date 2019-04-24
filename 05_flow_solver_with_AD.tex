@@ -64,6 +64,7 @@ for the fluid density given by Equation \eqref{eq:pressureSolverDensity} and $g$
 \end{figure}
 
 \section{Setup of Governing Equations}
+\label{sec:setupGovEq}
 After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in Equation \eqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets areas and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 

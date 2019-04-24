@@ -107,7 +107,7 @@ TypeError,TypeMapEntry,TypeMapLevel,TypeName,TypeVar,TypedSlot,UDPSocket,UInt,%
 UInt128,UInt16,UInt32,UInt64,UInt8,UndefRefError,UndefVarError,UnicodeError,%
 UniformScaling,Union,UnionAll,UnitRange,Unsigned,UpperTriangular,Val,Vararg,%
 VecElement,VecOrMat,Vector,VersionNumber,Void,WeakKeyDict,WeakRef,WorkerConfig,%
-WorkerPool,AD,FAD,CJAD,LAD, FlowSystem, broadcast, CustomJac, NullJac, IdentityJac, DiagJac, SparseJac%
+WorkerPool,AD,FAD,CJAD,LAD, FlowSystem, Well, broadcast, CustomJac, NullJac, IdentityJac, DiagJac, SparseJac%
 },%
 %
 %
@@ -404,6 +404,12 @@ morestring=[s]{L"}{"},%
 \lstset{tabsize=4}
 \lstset{aboveskip={1.5\baselineskip},belowskip={1.5\baselineskip}}
 
+%%%
+\lstset{numberstyle=\tiny\color{jlkeyword}}
+%\lstset{numbers=left}
+%\lstset{numberfirstline=true}
+%%%
+
 % creating the code box
 \lstset{backgroundcolor=\color{jlbackground}, rulecolor=\color{jlrule}}
 \lstset{frame=single, frameround=tttt}
@@ -415,6 +421,7 @@ morestring=[s]{L"}{"},%
 \lstset{basewidth=\bfem}
 \lstset{linewidth=\textwidth}
 \lstset{xleftmargin=\xmrgn, xrightmargin=\xmrgn}
+%\lstset{framexleftmargin=3\bfem, framexrightmargin=0.5\bfem}
 \lstset{framexleftmargin=0.5\bfem, framexrightmargin=0.5\bfem}
 
 
