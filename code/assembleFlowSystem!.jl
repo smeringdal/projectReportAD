@@ -5,7 +5,7 @@ function assembleFlowSystem!(fs::FlowSystem, well::Well)
             if fromCell == toCell
                 # Add backward Euler term to FlowSystem
             elseif fromCell in well || toCell in well
-                # Handle well equations
+                # Add well equations to FlowSystem
             else
                 # Add flux to FlowSystem
             end
