@@ -23,6 +23,11 @@ In line number 6, when \texttt{fromCell} and \texttt{toCell} are equal, but not 
 \lstinputlisting{code/timeDerivative.jl}
 In \texttt{FAD} and \texttt{CJAD} we made all the primary AD-variables before the simulation. We then used them as input parameters in the residual functions that returned new AD-variables which represented the values and Jacobians. With local AD we create new primary AD-variables for the applicable cell inside the function we want to evaluate. For \texttt{timeDerivative()} we create a \texttt{LAD} primary variable that represent the pressure in the cell before we calculate the backward Euler term. When \texttt{timeDerivative()} have returned the new \texttt{LAD} variable, \texttt{assembleFlowSystem!()} adds the calculated value to the correct index in \texttt{eqVal} and the derivative vector to the correct diagonal index in \texttt{globalJac}.
 
-In line number 10, when \texttt{fromCell} and \texttt{toCell} are two neighbouring cells the last term in 
+In line number 10, when \texttt{fromCell} and \texttt{toCell} are two neighbouring cells, the divergence term in \texttt{presEq} is calculated. As for \texttt{timeDerivative()} we create the primary AD-variables inside the function, but since we calculate the flux from one cell to the other  we have to be careful which direction we calculate the flux and which cell we want the derivative with respect to. Since the varying variables is named \texttt{fromCell} and \texttt{toCell} it is natural that the function \texttt{flux()}, seen below, calculates the flux from \texttt{fromCell} to \texttt{toCell}. 
+\lstinputlisting{code/fluxFunctionLocalAD.jl}
+What can be chosen is which cell we want the derivative with respect to. The choice only affect which indices of the Jacobian the calculated derivatives should be added or subtracted to. In \texttt{flux()} I have decided to calculate the derivative with respect to the \texttt{fromCell}. This choice leads to the following code for updating \texttt{FlowSystem}:
+\lstinputlisting{code/fluxCodeLocalAD.jl}
+The value of \texttt{fluxLAD} is added to \texttt{}
+
 
 \todo[inline]{Se på parallellisering for lokal AD?}
