@@ -29,7 +29,7 @@ What needs to be chosen is which cell we want the derivative with respect to. Th
 \lstinputlisting{code/fluxCodeLocalAD.jl}
 The value of \texttt{fluxLAD} is added to \texttt{eqVal} and the derivative of the flux with respect to \texttt{fromCell} is added to \texttt{globalJac}. In addition we know that the flux from \texttt{fromCell} to \texttt{toCell} is the same, but with negative sign, as the flux from \texttt{toCell} to \texttt{fromCell}. This means that the derivative of the flux from \texttt{toCell} with respect to \texttt{fromCell} needs to be subtracted with \texttt{fluxLad.derivatives}. For a facet between two neighbours we will with \texttt{assembleFlowSystem!()} calculate the value of the flux through the facet twice, only with different signs. You might think that we could save time by subtracting \texttt{fs.eqVal[toCell]} with \texttt{fluxLAD.val}, but since we also will need the opposite derivatives of this particular flux, there will small, or next to none, computational gain of exploiting this fact. In worst case it might actually become a slower implementation, as we will have to keep track of which fluxes has been added to which cells. When the flux from all the neighbours has been added up for a cell, we have obtained the divergence in that cell. 
 
-Line number 8 in \texttt{assembleFlowSystem!()} is the last line I have not commented and it is where the well equations, \texttt{rateEq} and \texttt{ctrlEq}, are handled. This is done similar as 
+Line number 8 in \texttt{assembleFlowSystem!()} is the last line I have not commented and it is where the well equations, \texttt{rateEq} and \texttt{ctrlEq}, are handled. This is line is executed if 
 
 
 \todo[inline]{Se på parallellisering for lokal AD?}
