@@ -4,7 +4,7 @@ function assembleFlowSystem!(fs::FlowSystem, well::Well)
         for toCell in neighbours
             if fromCell == toCell && fromCell in gridCell
                 # Add backward Euler term to FlowSystem
-            elseif fromCell in well || toCell in well
+            elseif fromCell in well && toCell in well
                 # Add well equations to FlowSystem
             else
                 # Add flux to FlowSystem
