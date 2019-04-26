@@ -4,7 +4,7 @@ This chapter will consider a different approach on how to use AD to solve PDEs. 
 
 \section{Implementation}
 \label{sec:LADImplementation}
-To get a better understanding of how Local AD works, it is best to look at how it is implemented. Like for \texttt{FAD} and \texttt{CJAD} I have implemented local AD using a struct I have called \texttt{LAD}:
+To get a better understanding of how Local AD works, it is best to look at how it is implemented. Like for \texttt{FAD} and \texttt{CJAD} I have implemented local AD using a struct called \texttt{LAD}:
 \lstinputlisting{code/LAD_structSimple.jl}
 Since we now only operate on one cell at the time the implementation of local AD is simpler than for \texttt{FAD} and \texttt{CJAD}. The value of the AD-variable is now only a scalar and the Jacobian matrices is replaced by a vector of derivatives. These are the derivatives  with respect to the primary variables in the cell. To easily create a new \texttt{LAD} primary variable with a given number of derivatives and where the derivative with respect to itself is $1.0$, I have created a function called \texttt{createVariable}:
 \lstinputlisting{code/createVariable.jl}
@@ -14,7 +14,7 @@ Where the implementation of the local AD tool is easier than for \texttt{FAD} an
 \lstinputlisting{code/FlowSystem.jl}
 This struct look very similar to the other AD structs, except from \texttt{globalJac} being one single sparse matrix instead of a vector of sparse matrices and each element in \texttt{globalJac} being a vector. At this point you might not understand why it is quicker to calculate the residuals cell by cell compared to everything in one go. The key reason for this is that we know that the structure of the global Jacobian will stay the same throughout the whole simulation. This means we can use the grid variable \texttt{G}, that contains the information on which cells are neighbours, and build the correct structure of \texttt{globalJac} once and for all. When we run the simulation we only change the values inside of \texttt{globalJac}, but the structure stays the same. This reuse of \texttt{globalJac} will save a lot of memory allocations and hence speed compared to \texttt{FAD} and \texttt{CJAD} which allocates new structs for each calculation. By creating a new constructor for \texttt{FlowSystem} that uses the grid variable \texttt{G}, the variables \texttt{eqVal} and \texttt{globalJac} will be allocated with the correct length and the correct structure before the simulation begins. For the grid in \autoref{ch:FlowSolver} we have 1000 cells. This implies 1000 different pressure values and in addition we have the bottom-hole pressure (\texttt{bhp}) and the total production (\texttt{qS}). Hence \texttt{eqVal} will be a vector of length 1002.
 
-Now that \texttt{FlowSystem} stores the  values and Jacobian of the residual functions, we need a new function to traverse through all cells and performing the calculations. I have chosen to call this function \texttt{assembleFlowSystem!()} where the exclamation mark is a Julia convention for a function that modifies its input parameters. The code for \texttt{assembleFlowSystem!()} can be seen below. I have removed all declarations of help variables and replaced the code for updating \texttt{FlowSystem} with comments to highlight the important structure of the function.
+Now that \texttt{FlowSystem} stores the  values and Jacobian of the residual functions, we need a new function to traverse through all cells and performing the calculations. I have chosen to call this function \texttt{assembleFlowSystem!()} where the exclamation mark is a Julia convention for a function that modifies its input parameters. The code for \texttt{assembleFlowSystem!()} can be seen below. I have removed all declarations of help variables and replaced the code for updating \texttt{FlowSystem} with comments to highlight the important parts of the function structure.
 \lstset{numbers=left}
 \lstinputlisting{code/assembleFlowSystem!.jl}
 \lstset{numbers=none}
@@ -35,12 +35,41 @@ Line number 8 in \texttt{assembleFlowSystem!()} is the last line I have not comm
 Summed up the calculation of the residual functions using local AD is based on two modules. The first is the actual AD tool with the \texttt{LAD} struct, and the second is \texttt{FlowSystem} which keeps track of the global system and what calculations should be performed by the AD tool. With this approach we lose some of the advantages using the other AD tools where the discrete residual functions looked very similar to the continuous case, like explained in \autoref{sec:setupGovEq}. The main structure of \texttt{assembleFlowSystem!()} will however be the same no matter what type of simulation, hence making modifications to the code, or building another simulation, will not demand a complete change of code structure. \todo{sjekk om dette ikke ble litt vagt litt senere.}
 
 \section{Optimizing Local AD}
-As explained in the beginning of this chapter, the main idea behind local AD is to reuse the Jacobian to save memory usage and extra memory allocations. With the implementation given in \autoref{sec:LADImplementation}
+As explained in the beginning of this chapter, the main idea behind local AD is to reuse the Jacobian to save memory usage and extra memory allocations. The implementation given in \autoref{sec:LADImplementation} has however left out some small, but key parts of the implementation that will massively decrease the memory usage and speed used. This is purely implementation specific differences that has been left out to make the introduction to local AD more clear. It will not change the theory behind using local AD to solve PDE's.
+
+\subsection{Dynamic VS Static Arrays}
+The difference between a dynamic array and a static array is that a dynamic array can be extended or shortened as much as you like while a static array has a fixed length. Using a static array will give computational gain concerning speed and memory allocations compared to a dynamic array. This is because the compiler knows that a given static array has the given fixed length forever and hence it can allocate that space in memory in advance and optimize the code. With a dynamic array it does not know if the array grows larger, or maybe becomes slower and it is much harder to optimize the code. 
+
+Julia has a package called \emph{\cite{StaticArrays}} that provides static arrays to the the built in arrays without the possibility for changing the size of the array. The package provides two types of vectors, \texttt{SVector} and \texttt{MVector}. Both are static vectors, but \texttt{MVector} is mutable meaning the values inside the vector can be changed, where the values inside an \texttt{SVector} is final when the vector is defined. This makes SVector ideal for \texttt{LAD.derivatives} since when we perform operations on \texttt{LAD} variables, new \texttt{LAD} variables are returned. \texttt{MVector} is however optimal for the elements in the sparse matrix \texttt{FlowSystem.globalJac} as we know how long each element vector will be, but we want to be able to change the values inside each vector. 
+
+When the implementation is changed to use static vectors it needs to know how long these vectors are. When building a simulation it is not a problem to say in advance how many derivatives we need and when the compiler knows this before compilation it can optimize the machine code. OPM solves this by creating a template class \todo{Legg til både kilde og sjekk formulering} such that the compiler always knows that for this simulation, the static array will always have this fixed length. This is important because we do not want to create \texttt{LAD} structs with different lengths for \texttt{LAD.derivatives} and we want all vectors in \texttt{FlowSystem.globalJac} to have that same length. If we define this clearly the compiler can optimize the code much better than if it does not know if for example some elements in \texttt{globalJac} suddenly will be allocated with a longer static mutable array. This will also make the implementation of the operators of \texttt{LAD} easier, as we know for certain that all \texttt{LAD} variables will have the same length on \texttt{derivatives}. The best implementation I have found for this in Julia is to declare a global constant variable in the local AD module such that the new implementation of \texttt{LAD} becomes:
+\lstinputlisting{code/LAD_struct.jl}
+One disadvantage with this implementation is that the Local AD module needs to be modified to work with simulations with more primary variables for each cell. \todo{Må se om det finnes noen annen måte, hvis ikke bør det kanskje kommenteres at det er litt krøkkete} The implementation of \texttt{FlowSystem} imports the local AD module, hence it can also use the global constant in the new implementation:
+
+
+\section{Flow Solver with Local AD}
+\label{sec:flowSolverWithLAD}
 \begin{itemize}
     \item Forskjellen på statiske og dynamisk vektorer
     \item Videre optimalisering av LAD
     \item profileringen av createVariable
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.75\textwidth}
+        \includegraphics[height = 0.35\textheight, width=\textwidth ]{figures/profilingSlowCreateVariablesFlux.png}
+        \caption{}
+        \label{fig:profileFastCreateVar}
+    \end{subfigure}
+    \hspace{0.06\textwidth}
+    \begin{subfigure}[t]{0.18\textwidth}
+        \includegraphics[height = 0.35\textheight, width=\textwidth]{figures/profilingFastCreateVariablesFlux.png}
+        \caption{}
+        \label{fig:profileSlowCreateVar}
+    \end{subfigure}
+    \caption{}
+\end{figure}
 
 \section{Flow Solver with Local AD}
 
