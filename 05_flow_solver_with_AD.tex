@@ -90,7 +90,7 @@ The corresponding discrete equation that we call \texttt{flux} is given by
 \lstinputlisting{code/flux.jl}
 Here, T is the transmissibilities that contain $k$ and the properties of the grid. Since two adjacent cells can have different values of $\rho$, we use the  average for the two cells. \texttt{gradz} is the gradient of the cell centroid's $z$-value. This determines how much the flux depend on $g$ given the orientation of the adjacent cells. When \texttt{flux} is defined, we define the continuity equation in the continuous case
 \begin{equation*}
-    \frac{\partial}{\partial t}(\phi\rho)(p) + \nabla\cdot(\rho\textbf{v}) = q,
+    \frac{\partial}{\partial t}(\phi\rho) + \nabla\cdot(\rho\textbf{v}) = q,
 \end{equation*}
 where $\phi$ is the porosity of the rock. Since we will handle the well later, the source term $q$ representing injection or production fluids, is set to zero for now. In the corresponding discrete case we get the function
 \lstinputlisting{code/presEq.jl}
