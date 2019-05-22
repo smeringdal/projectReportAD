@@ -167,7 +167,7 @@ hence we obtain the correct derivative $f_x$. By now you might wonder why make t
     g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
     \label{eq:DependencyBackwardAD}
 \end{equation}
-Now the derivatives from the chain rule in Equation \eqref{eq:chainRuleReverse} become% \\
+Now the derivatives from the chain rule in \myeqref{eq:chainRuleReverse} become% \\
 \begin{multicols}{3}
     \noindent
     \begin{align*}
@@ -211,8 +211,9 @@ The calculation of the derivatives together with a dependency graph can be seen 
  	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
+\todo[inline]{Mindre font på figurtittel}
 Comparing this to the method of dual numbers from \autoref{sec:DualNumbers}, where we would have to evaluate $f$ three times, once for each derivative, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of the function. 
-The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
+The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
 
 \subsection{Forward Automatic Differentiation With Multiple Parameters}
 \label{sec:FADWithMultipleParameters}
@@ -337,7 +338,7 @@ which we can write on residual form such that
 \begin{equation*}
 	\boldsymbol{F}(\boldsymbol{x}) = \textbf{A}\boldsymbol{x} - \boldsymbol{b} = 0 .
 \end{equation*}
-This means that to solve the linear system in Equation \eqref{eq:linearSystem}, we need to find the root of $\boldsymbol{F}(\boldsymbol{x})$. This can be done by choosing an initial value $\boldsymbol{x}^0$ and observe that since $\boldsymbol{F}(\boldsymbol{x})$ is linear, the corresponding multivariate Newton-Raphson method will converge in one step. The general form of the multivariate Newton-Raphson method is given by
+This means that to solve the linear system in \myeqref{eq:linearSystem}, we need to find the root of $\boldsymbol{F}(\boldsymbol{x})$. This can be done by choosing an initial value $\boldsymbol{x}^0$ and observe that since $\boldsymbol{F}(\boldsymbol{x})$ is linear, the corresponding multivariate Newton-Raphson method will converge in one step. The general form of the multivariate Newton-Raphson method is given by
 \begin{equation}
 	\boldsymbol{x}^{n+1} = \boldsymbol{x}^n - J_{\boldsymbol{F}}  (\boldsymbol{x}^n)^{-1} \boldsymbol{F}(\boldsymbol{x}^n).
     \label{eq:newtonRaphsonVector}
@@ -346,7 +347,7 @@ Here, $J_{\boldsymbol{F}}  (\boldsymbol{x}^n)^{-1}$ is the inverse of the Jacobi
 
 \subsection{Solving the Poisson Equation}
 \label{sec:poissonEq}
-For a simple linear system like Equation \eqref{eq:linearSystem} it may seem a bit forced and unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver. But for applications to the numerical solution of partial differential equations (PDEs), this approach greatly simplifies the process of (linearizing and) assembling the linear systems that appear when you solve the (non)linear system of discretized equations. Indeed, using Equation \eqref{eq:newtonRaphsonVector} with AD, all you have to do is implement the discretized equations on residual form.  As a preface to introducing how we will do this, we consider the Poisson equation
+For a simple linear system like \myeqref{eq:linearSystem} it may seem a bit forced and unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver. But for applications to the numerical solution of partial differential equations (PDEs), this approach greatly simplifies the process of (linearizing and) assembling the linear systems that appear when you solve the (non)linear system of discretized equations. Indeed, using \myeqref{eq:newtonRaphsonVector} with AD, all you have to do is implement the discretized equations on residual form.  As a preface to introducing how we will do this, we consider the Poisson equation
 \begin{equation}
     -\nabla(\textbf{K}\nabla u) = q,
     \label{eq:Poisson}
@@ -356,7 +357,7 @@ where \textbf{K} is a spatially variable coefficient, and we want to find $u$ on
     \int_{\partial\Omega_i}\!\!- \textbf{K} \nabla u \cdot \textbf{n}\, \mbox{ds} = \int_{\Omega_i} q \,\mbox{dA}.
     \label{eq:conservation}
 \end{equation}
-Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so Equation \eqref{eq:conservation} describes the conservation of mass in the cell $\Omega_i$, where total flux in and out of the boundary of $\Omega_i$ is equal to the total accumulation from source and sink terms inside $\Omega_i$. For simplicity, we define $\textbf{v} = - \textbf{K} \nabla u$ as the flux. As a simple example to begin with, we will consider \autoref{fig:gridTwoCells}, which shows two cells $\Omega_i$ and $\Omega_k$. The average values of $u$ inside the two cells are $u_i$ and $u_k$, and the interface, or facet, between the cells is defined as $\Gamma_{i,k}$.
+Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so \myeqref{eq:conservation} describes the conservation of mass in the cell $\Omega_i$, where total flux in and out of the boundary of $\Omega_i$ is equal to the total accumulation from source and sink terms inside $\Omega_i$. For simplicity, we define $\textbf{v} = - \textbf{K} \nabla u$ as the flux. As a simple example to begin with, we will consider \autoref{fig:gridTwoCells}, which shows two cells $\Omega_i$ and $\Omega_k$. The average values of $u$ inside the two cells are $u_i$ and $u_k$, and the interface, or facet, between the cells is defined as $\Gamma_{i,k}$.
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_two_cells.pdf}
@@ -394,7 +395,7 @@ By subtracting the two equations for $v_{i,k}$ and moving $T_{i,k}$ and $T_{k,i}
     \end{aligned}
     \label{eq:flux}
 \end{equation}
-we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the gradient of $u$. This is called the two-point flux-approximation (TPFA) \citep{lieMrstUrl}. Now that we have an approximation of the flux through the interface between $\Omega_i$ and $\Omega_k$, we get that Equation \eqref{eq:fluxOverBoundary} can be approximated by 
+we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the gradient of $u$. This is called the two-point flux-approximation (TPFA) \citep{lieMrstUrl}. Now that we have an approximation of the flux through the interface between $\Omega_i$ and $\Omega_k$, we get that \myeqref{eq:fluxOverBoundary} can be approximated by 
 \begin{equation}
     \sum_k T_{i,k}(u_k - u_i) = q_i, \hspace{3em} \forall \Omega_i \in \Omega,
     \label{eq:PoissonSolvableTwoCells}
@@ -409,7 +410,7 @@ where $q_i$ is the integrated accumulation over cell $\Omega_i$. Now, we can get
     \end{array}
     \right.
 \end{align*}
-This means we can solve the Poisson equation \eqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. For this simple Poisson equation, we still only end up with a linear system of equations that we may as well solve without AD. The only benefit is that we never need to form the matrix $\mathbf{A}$ explicitly, which can be bit complicated for more complex grids. For nonlinear PDEs, we would also need to linearize the local discrete equations, and the construction of the matrix \textbf{A} generally becomes more tricky.  The ease of using AD becomes clearer when we combine it with discrete differentiation operators that we will define in the next subsection.
+This means we can solve the Poisson \myeqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. For this simple Poisson equation, we still only end up with a linear system of equations that we may as well solve without AD. The only benefit is that we never need to form the matrix $\mathbf{A}$ explicitly, which can be bit complicated for more complex grids. For nonlinear PDEs, we would also need to linearize the local discrete equations, and the construction of the matrix \textbf{A} generally becomes more tricky.  The ease of using AD becomes clearer when we combine it with discrete differentiation operators that we will define in the next subsection.
 
 \subsection{Discrete Differentiation Operators}
 \label{sec:DiscreteOperators}
@@ -425,12 +426,12 @@ Instead of the simple two-cell grid we used in \autoref{fig:gridTwoCells}, we no
 
 \autoref{fig:partialGrid} shows how we can introduce two different mappings that explain the relation between the cells and the facets. The mappings for cells 5 and 8 are written out. The first relation, $F(c)$, is the mapping from cells $c$ to their delimiting facets $f$. The second mapping, $C_i(f)$ for $i = 1,2$, is a mapping from a facet $f$ to the two cells $C_1$ and $C_2$ that share this facet. All these properties will be used to create the discrete divergence and gradient operators.
 
-We now have all the physical properties of the grid we used to attain the formulae in equation \eqref{eq:PoissonSolvableTwoCells}. From these, we want to create discrete divergence and gradient operators that correspond to the continuous equivalents for this grid. Consider the Poisson equation \eqref{eq:Poisson} for the function $u$. Then the discrete gradient operator for a facet $f$ is defined as 
+We now have all the physical properties of the grid we used to attain the formulae in \myeqref{eq:PoissonSolvableTwoCells}. From these, we want to create discrete divergence and gradient operators that correspond to the continuous equivalents for this grid. Consider the Poisson \myeqref{eq:Poisson} for the function $u$. Then the discrete gradient operator for a facet $f$ is defined as 
 \begin{equation}
     \texttt{dGrad}(u)[f] = u[C_2(f)] - u[C_1(f)], 
     \label{eq:discreteGradient}
 \end{equation}
-where $u[C_i(f)]$ is the value of $u$ at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in equation \eqref{eq:flux}. Let $v_{i,k} = v[f]$, where $f$ is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for cell $c$ is defined as 
+where $u[C_i(f)]$ is the value of $u$ at the cell corresponding to $C_i(f)$. For the divergence operator, we remember the expression we found for the flux through a facet in \myeqref{eq:flux}. Let $v_{i,k} = v[f]$, where $f$ is the facet between cell $i$ and cell $k$. Since the divergence in a cell is the same as the sum of flux leaving and entering the cell, the discrete divergence operator for cell $c$ is defined as 
 \begin{equation*}
     \texttt{dDiv}(\textbf{v})[c] = \sum_{f\in f(c)} \operatorname{sgn}(f)v[f]
 \end{equation*}
@@ -452,33 +453,3 @@ The extra \texttt{d} in front of the names in included so that we later avoid na
     = 0.
 \end{align*}
 Here, \textbf{T} is the transmissibility defined in \eqref{eq:transmissibility}. The notation for the discrete equations is clearly similar to the continuous case, and we can actually read the discrete expression and directly understand what equation we are trying to solve. For this simple Poisson equation, we will still have a linear system and we would not necessarily need to use AD to solve it. But for more complex problems, we can derive the discrete divergence and gradient operators in the same approach for any type of grid. Although the system then becomes non-linear, it will be easy to solve using AD and the Newton-Raphson method. An example of this can be seen in \autoref{ch:FlowSolver}.
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

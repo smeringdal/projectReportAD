@@ -40,6 +40,7 @@
 
 % ===== Matte =================
 \usepackage{amsmath, amssymb} 
+
 \usepackage{mathtools}
 % Ekstra matematikkfunksjoner.
 \usepackage{siunitx}							    % Må inkluderes for blant annet å få tilgang til kommandoen \SI{3.25(2)}{\kilo\gram} (korrekte måltall med enheter)
@@ -73,6 +74,13 @@
 
 % ===== Linker ================ 
 \usepackage[colorlinks=true, pdfstartview=FitV, linkcolor=black, citecolor=black, urlcolor=blue]{hyperref} %pdfborder=000,pdftex=true
+%\renewcommand*{\equationautorefname}{equation}
+\newcommand*{\myeqref}[2][Equation~]{%
+  \hyperref[{#2}]{#1(\ref*{#2})}%
+}
+\def\equationautorefname#1#2\null{%
+  Eq.#1(#2\null)%
+}
 %\pdfcompresslevel=9
 \usepackage{url}
 
