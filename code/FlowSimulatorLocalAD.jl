@@ -1,10 +1,9 @@
-## Define FlowSystem(fs) with initial pressure, length of simulation and timestep
+## Define FlowSystem(fs), length of simulation and timestep
 while timeNow < endTime
-    p0 = fs.pressure
     while ## Newton-Raphson method has not converged.
-        assembleFlowSystem!(tps, p0, well)
+        assembleFlowSystem!(tps, well)
         upd = -(fs.globalJac\fs.eqVal)
-        fs.pressure += upd
+        # Update pressure, bottom-hole pressure and total production
     end
     timeNow += dt
 end
