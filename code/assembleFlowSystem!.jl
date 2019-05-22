@@ -1,4 +1,4 @@
-function assembleFlowSystem!(fs::FlowSystem, well::Well)
+function assembleFlowSystem!(fs::FlowSystem, p0::Vector{Float64}, well::Well)
     resetFlowSystem!(fs)
     for fromCell = 1:length(fs.eqVal)
         for toCell in neighbours
