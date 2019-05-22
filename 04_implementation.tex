@@ -345,7 +345,7 @@ f(x,y,z)  = \exp(2xy) - 4xz^2 + 13x - 7, \qquad x,y,z \in \Re^n.
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.9\textwidth]{figures/benchmark_all_ADs.pdf}
-    \caption{Computational time for different methods calculating the value and Jacobian of $f$ in Equation \eqref{eq:benchmarkFunction} as a function of length of the input vectors.}
+    \caption{Computational time for different methods calculating the value and Jacobian of $f$ in \myeqref{eq:benchmarkFunction} as a function of length of the input vectors.}
     \label{fig:benchmarkADVectorFunction}
 \end{figure}
 \autoref{fig:benchmarkADVectorFunction} reports six different graphs. The first thing you observe is that \texttt{ForwardDiff} scales very badly as n becomes large. This is because it creates and works with the full $3n \times 3n$ Jacobian matrix as discussed in \autoref{sec:ADInJulia}. I stopped the benchmark of \texttt{ForwardDiff} for $n = 3^8$, as the Jacobian at this point already has more than 380 million elements. We can nevertheless observe that for small vectors, the methods implemented in MATLAB, as well as \texttt{FAD} and \texttt{CJAD}, have more overhead than \texttt{ForwardDiff} and the analytic solution. This makes them slower for small $n$, but as $n$ grows, this overhead becomes quickly negligible. Based on \autoref{fig:benchmarkADVectorFunction}, from a numerical simulation point of view, \texttt{ForwardDiff} is useless for obtaining the Jacobian of functions, as it scales badly for increasing $n$.
