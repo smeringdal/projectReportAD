@@ -1,10 +1,11 @@
 \chapter{Implementation}
+\label{ch:Implementation}
 \todo[inline]{intro her må endres da deler av Julia-forklaringen er flyttet utenfor.}
 In this chapter, I will discuss why it is interesting to implement AD in Julia. I will also give some implementation-specific details and benchmark the implementation against other AD libraries in Julia and MATLAB.
-\label{ch:Implementation}
+
 \section{Automatic Differentiation in Julia}
 \label{sec:ADInJulia}
-In short, Julia seems to be the perfect language for numerical applications and it would be interesting to see how it performs compared to MATLAB.
+As discussed in \autoref{ch:Julia}, Julia seems to be the perfect language for numerical applications and it would be interesting to see how it performs compared to MATLAB.
 When it comes to AD in Julia, there are already some packages that can be used. Most of them are backward AD-packages designed for machine learning, for example AutoGrad \citep{knet2016mlsys} and Zygote \citep{innes2018don}. The reason why AD-packages for machine learning are based on backward AD is that machine learning, without going to deep into the subject, largely amounts to the minimization of functions with a large number of input parameters, but with only one output parameter. As discussed in \autoref{sec:BackwardAD}, backward AD is much more efficient than forward AD in these types of evaluations. For numerical applications there is usually many input parameters and output parameters. Hence there is no clear advantage of using backward AD compared to forward AD. 
 
 There is one package called \textit{ForwardDiff} \citep{ForwardDiff} being developed by the Julia community that uses forward AD. ForwardDiff relies on dual numbers as explained in \autoref{sec:DualNumbers} extended to multiple dimensions. This is called multidimensional dual numbers and a vector \textbf{x} of length $n$ is represented as

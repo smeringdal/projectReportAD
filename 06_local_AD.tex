@@ -12,16 +12,17 @@ To make sure that each primary variable is initialized correctly, initialization
 \lstinputlisting{code/createVariable.jl}
 The operators for the \texttt{LAD} struct are implemented similarly as explained in \autoref{ch:Implementation} for \texttt{FAD} and \texttt{CJAD}, but since we now, instead of having a Jacobian matrix, only have a vector of derivatives, the implementation is easier and follows the lines of the description from \autoref{sec:FADWithMultipleParameters}. 
 
-Whereas the implementation of the local AD tool is easier than for \texttt{FAD} and \texttt{CJAD}, there is more work when calculating the residual functions. Since we no longer can use discrete gradient and divergence operators, but instead have to traverse through the grid cell by cell, we need a place to store the resulting residual values and the corresponding Jacobian. We also need a method to traverse through all the cells and calculate the contributions from each neighbouring cell. %Where the AD part of the code in \texttt{FAD} and \texttt{CJAD} were fully separated from the simulation, for local AD it is more integrated. This means that when using local AD to create the simulation it becomes a more application specific implementation than the method for \texttt{FAD} and \texttt{CJAD}. 
-To create the flow solver from \autoref{ch:FlowSolver}, I have chosen to store the calculated values of the residual functions in another struct called \texttt{FlowSystem}:
+\subsection{Flow Solver for Local AD}
+\label{sec:FlowSolverLADImplementation}
+Whereas the implementation of the local AD tool is easier than for \texttt{FAD} and \texttt{CJAD}, there is more work when calculating the residual functions. Since we no longer can use discrete gradient and divergence operators, but instead have to traverse through the grid cell by cell, we need a place to store the resulting residual values and the corresponding Jacobian. We also need a method to traverse through all the cells and calculate the contributions from each neighbouring cell.To create the flow solver from \autoref{ch:FlowSolver}, I have chosen to store the calculated values of the residual functions in another struct called \texttt{FlowSystem}:
 \lstinputlisting{code/FlowSystem.jl}
 This struct looks very similar to the other AD structs, except from \texttt{globalJac} being one single sparse matrix instead of a vector of sparse matrices. At this point you might not understand why it is quicker to calculate the residuals cell by cell compared to everything in one go. The key reason for this lies in the \texttt{FlowSystem} struct. Since we know that the structure of the global Jacobian will stay the same, we can reuse this sparse matrix structure throughout the whole simulation. Before the simulation begins, we use the grid variable \texttt{G}, which contains the information on which cells are neighbours, and build the correct structure of \texttt{globalJac} once and for all. When we later run the simulation, we only change the values inside of \texttt{globalJac}, but the structure stays the same. This reuse of \texttt{globalJac} will save a lot of memory allocations and hence consume less CPU time compared to \texttt{FAD} and \texttt{CJAD}, which both allocate new structs for each calculation. By creating a new constructor for \texttt{FlowSystem} that uses the grid variable \texttt{G}, the variables \texttt{eqVal} and \texttt{globalJac} will be allocated with the correct length and the correct structure before the simulation begins. For the grid in \autoref{ch:FlowSolver}, we have 1000 cells. This implies 1000 different pressure values and in addition we have the bottom-hole pressure (\texttt{bhp}) and the total production (\texttt{qS}). Hence, \texttt{eqVal} will be a vector of length 1002.
 
-Now that \texttt{FlowSystem} stores the  values and Jacobian of the residual functions, we need a new function to traverse through all cells and perform the calculations. The function that will execute the calculations is \texttt{assembleFlowSystem!()}, where the exclamation mark is a Julia convention for a function that modifies its input parameters. The corresponding code can be seen below. I have removed all declarations of help variables and replaced the code for updating \texttt{FlowSystem} with comments to highlight the important parts of the function structure. What I have not mentioned previously is that \texttt{FlowSystem} will contain an extra vector containing the current pressure. Since we use the pressure to calculate the residual functions, it is natural to store the current pressure next to the residual values
+Now that \texttt{FlowSystem} stores the  values and Jacobian of the residual functions, we need a new function to traverse through all cells and perform the calculations. The function that will execute the calculations is \texttt{assembleFlowSystem!()}, where the exclamation mark is a Julia convention for a function that modifies its input parameters. The corresponding code can be seen below. I have removed all declarations of help variables and replaced the code for updating \texttt{FlowSystem} with comments to highlight the important parts of the function structure.
 \lstset{numbers=left}
 \lstinputlisting{code/assembleFlowSystem!.jl}
 \lstset{numbers=none}
-The input parameter \texttt{well} is a struct that contains all necessary information about the well. What I have not mentioned previously, is that \texttt{FlowSystem} will also contain an extra vector containing the current pressure. Since we use the pressure to calculate the residual functions, it is natural to store the current pressure next to the residual values. This is why there is only the pressure at the previous time step, \texttt{P0}, in addition to \texttt{fs} and \texttt{well}, as an input parameter. The first line in \texttt{assembleFlowSystem!()} resets \texttt{eqVal} and \texttt{GlobalJac} such that the structures are unchanged, but all the values are set to zero. Then, the function starts traversing through the grid and for every cell it adds up the contributions from all neighbouring cells. Be aware that the looping variable names \texttt{fromCell} and \texttt{toCell} can be a bit misleading when they represent bottom-hole-pressure and total production, as those primary variables do not belong to any cell. The intuitiveness of considering the flow from one cell to another is however considered more valuable than the issue that they will also represent bottom-hole-pressure and total production. The \texttt{eqVal} and \texttt{globalJac} variables are updated in line number 6, 8 and 10 inside the inner loop. As a reminder, the residual functions that \texttt{FlowSystem} eventually will represent are the functions \texttt{presEq}, \texttt{rateEq} and \texttt{ctrlEq} defined in \autoref{sec:setupGovEq}:
+The input parameter \texttt{well} is a struct that contains all necessary information about the well. The first line in \texttt{assembleFlowSystem!()} resets \texttt{eqVal} and \texttt{GlobalJac} such that the structures are unchanged, but all the values are set to zero. Then, the function starts traversing through the grid and for every cell it adds up the contributions from all neighbouring cells. Be aware that the looping variable names \texttt{fromCell} and \texttt{toCell} can be a bit misleading when they represent bottom-hole-pressure and total production, as those primary variables do not belong to any cell. The intuitiveness of considering the flow from one cell to another is however considered more valuable than the issue that they will also represent bottom-hole-pressure and total production. The \texttt{eqVal} and \texttt{globalJac} variables are updated in line number 6, 8 and 10 inside the inner loop. As a reminder, the residual functions that \texttt{FlowSystem} eventually will represent are the functions \texttt{presEq}, \texttt{rateEq} and \texttt{ctrlEq} defined in \autoref{sec:setupGovEq}:
 \lstinputlisting{code/governingEquationsPresSolver.jl}
 In line number 6, \texttt{fromCell} and \texttt{toCell} are equal, but do not reference the bottom-hole-pressure or total production. Here, the first term in \texttt{presEq}, or the backward Euler term, is calculated. This is performed in an outer function called \texttt{timeDerivative()} that returns a \texttt{LAD} struct:
 \lstinputlisting{code/timeDerivative.jl}
@@ -37,7 +38,7 @@ Line number 8 in \texttt{assembleFlowSystem!()} is the last line I have not comm
 
 Summed up, the calculation of the residual functions using local AD is based on two modules. The first is the actual AD tool with the \texttt{LAD} struct, and the second is \texttt{FlowSystem}, which keeps track of the global system and what calculations should be performed by the AD tool. With this approach, we loose some of the advantages using the other AD tools where the discrete residual functions looked very similar to the continuous case, like explained in \autoref{sec:setupGovEq}. The main structure of \texttt{assembleFlowSystem!()} will, however, be the same no matter what type of simulation, hence making modifications to the code, or building another simulator, will not demand a complete change of the code structure.
 
-Now that the assemble of the governing equations are implemented, we need a main loop that performs the simulation. The good news is that this main loop will be very similar to the one outlined in \autoref{sec:setupGovEq}. The only difference is that instead of evaluating a residual function F, we assemble the equations using \texttt{assembleFlowSystem!()}. A pseudo code of the new main loop can be seen below. 
+Now that the assemble of the governing equations are implemented, we need a main loop that performs the simulation. Since we have separated the assemble of the equations into a single function, the main loop will be very similar to the one outlined in \autoref{sec:setupGovEq}. The only difference is that instead of evaluating a residual function \texttt{F}, we assemble the equations using \texttt{assembleFlowSystem!()}. A pseudo code of the new main loop can be seen below. 
 \lstinputlisting{code/FlowSimulatorLocalAD.jl}
 
 \section{Optimizing Local AD}
@@ -51,9 +52,9 @@ Julia has a package called \emph{\cite{StaticArrays}} that provides static array
 
 When the implementation is changed to use static vectors, it needs to know how long these vectors are. When building a simulator, it is not a problem to say in advance how many derivatives we need, and once the compiler knows this before compilation, it can optimize the machine code. OPM solves this by creating a template class containing the length of the gradient vector.\todo{Legg til både kilde og sjekk formulering} This ensures that the compiler always knows that for this simulator, the static vector will always have this fixed length. This is important because we do not want to create \texttt{LAD} structs with different lengths for \texttt{LAD.derivatives}. In addition, if we define this clearly, the compiler knows exactly how much memory is needed when we allocate a new \texttt{LAD} variable. By giving the compiler this information before compilation, we help the it to optimize the machine code. This will also make the implementation of the operators of \texttt{LAD} easier, as we know for certain that all \texttt{LAD} variables will have \texttt{derivatives} vectors with the same length. The best implementation I have found for this in Julia is to declare a global constant variable in the local AD module such that the new implementation of \texttt{LAD} becomes:
 \lstinputlisting{code/LAD_struct.jl}
-One disadvantage with this implementation is that the Local AD module needs to be modified to work for simulations with more primary variables for each cell. \todo{Må se om det finnes noen annen måte, hvis ikke bør det kanskje kommenteres at det er litt krøkkete}
+The disadvantage with this implementation is that the Local AD module needs to be modified to work for simulations with more primary variables for each cell. Since the implementations of the operators are unchanged, this modifications will only consist of changing the value of \texttt{NUM\_DERIV}. However, it would be better if Julia had the opportunity to pass in an argument into the \texttt{LAD} module. In this way the module could be compiled with any given value for \texttt{NUM\_DERIV}. As it is now, it is not possible to have one single \texttt{LAD} module and two different simulators with different number of primary variables, at the same time, in the same directory. A workaround could be to have multiple \texttt{LAD} modules with the only difference being the value of \texttt{NUM\_DERIV}. This would be a fully functional workaround, but not a very elegant one.
 
-\section{Flow Solver with Local AD}
+\section{Flow Solver Results for Local AD}
 \label{sec:flowSolverWithLAD}
 Now that \texttt{LAD} has been implemented with static vectors, it is interesting to see how the local AD method compares to \texttt{FAD} and \texttt{CJAD} in the simulation from \autoref{ch:FlowSolver}. Since the local AD technique from OPM, unlike the vectorized methods from MRST, is constructed with a main focus on computational efficiency, and since it is also assumed that Julia is supposed to run as fast as C, we expect that the local AD approach will give significant computational gain. This is unfortunately not the case with the implementation outlined in this chapter. Indeed, \texttt{LAD} performs worse than \texttt{CJAD} and similar to \texttt{FAD}. 
 
@@ -93,25 +94,26 @@ As discussed in \autoref{ch:FlowSolver}, by only looking at assembling of the re
 \end{table}
 The table shows that the local AD approach is approximately six times faster than the other tested implementations, which is a significant improvement. This gives us an indication that Julia can be a language where we can quickly create new simulators using the high-level and user-friendly \texttt{CJAD} or a similar AD tool, and in the same language create more efficient simulators using a method like local AD. To confirm this, however, we need to test the performance for a larger problem than a single-phase pressure solver. In \autoref{sec:TwoPhaseSimulation}, I will test how local AD performs in Julia solving a two-phase problem with a more realistic grid structure. This will give a better indication on how well Julia is suited for creating high performance simulators.
 
-\section{Two Phase Incompressible Flow}
+\section{Two-Phase Incompressible Flow}
 \label{sec:TwoPhaseSimulation}
-Previously in this thesis I have only looked at single-phase flow, where the fluid present is oil. As explained in the introduction, only about 30\% of the oil in the reservoir will be extracted unless we create external forces to the reservoir. This normally consist of injecting either water, gas, or both, into the reservoir. As the purpose of this thesis is not oil recovery, but to see how the AD tools perform simulating oil recovery, I will not go deep into the physics of how it is done. More specific information about oil recovery can be found in \citet{lieMrstUrl}. Sufficient information for this example is that we want to simulate how water flows from an injector into a reservoir full of oil. This will be done for a grid from the 10th SPE Comparative Solution Project \emph{\citep{SPE10}}. This is a realistic grid created to benchmark simulators against each other.
+Previously in this thesis I have only looked at single-phase flow, where the fluid present is oil. As explained in the introduction, only about 30\% of the oil in the reservoir will be extracted unless we create external forces to the reservoir. This normally consist of injecting either water, gas, or both, into the reservoir. As the purpose of this thesis is not oil recovery, but to see how the AD tools perform simulating oil recovery, I will not go deep into the physics of how it is done. More specific information about oil recovery can be found in \citet{lieMrstUrl}. Sufficient information for this example is that we want to simulate how water flows from an injector into a reservoir full of oil. This will be simulated for a grid from the 10th SPE Comparative Solution Project \emph{\citep{SPE10}}. This is a realistic grid created to benchmark simulators against each other.
 
-The SPE10 (model 2) grid is split into 85 layers. Each layer contains 60$\times$220 cells, making the total number of grid cells 1 122 000. To simplify the implementation I will only look at a single layer, layer 5, making the problem two-dimensional with 13 200 cells. In differ from the grid in \autoref{ch:FlowSolver} the permeability and porosity varies throughout the grid. This will affect the path of the water flow. \autoref{fig:porositySPE10} shows the porosity in the grid and \autoref{fig:permeabilitySPE10} shows a logarithmic color plot of the permeability. Both figures also display the placement of the water injector in the center of the grid, and the four wells in each corner. \autoref{fig:porositySPE10} shows that the rock around well 3 and 4 are very dense and \autoref{fig:permeabilitySPE10} naturally shows that the permeability here is low as well. This gives us an expectation that the water will flow to the left.
+The SPE10 (model 2) grid is split into 85 layers. Each layer contains 60$\times$220 cells, making the total number of grid cells 1 122 000. To simplify the implementation, I will only look at a single layer, layer 5, making the problem two-dimensional with 13 200 cells. In differ from the grid in \autoref{ch:FlowSolver}, the permeability and porosity varies throughout the grid. This will affect the path of the water flow. \autoref{fig:porositySPE10} shows the porosity in the grid and \autoref{fig:permeabilitySPE10} shows a logarithmic color plot of the permeability. Both figures also display the placement of the water injector in the center of the grid, and the four wells at each corner. \autoref{fig:porositySPE10} shows that the rock around well 3 and 4 are very dense (low porosity) and \autoref{fig:permeabilitySPE10} naturally shows that the permeability is also low in this area. This gives us an expectation that the water will flow to the left.
 \begin{figure}[H]
     \centering
     \includegraphics[width = \textwidth]{figures/porositySPE10.eps}
-    \caption{}
+    \caption{Color plot of the porosity in the SPE10 grid.}
     \label{fig:porositySPE10}
 \end{figure}
 \begin{figure}[H]
     \centering
     \includegraphics[width = \textwidth]{figures/permeabilitySPE10.eps}
-    \caption{}
+    \caption{Logarithmic color plot of the permeability in the SPE10 grid.}
     \label{fig:permeabilitySPE10}
 \end{figure}
 \todo[inline]{Fjerne hvite kanter}
-The governing equations for a two-phase flow are similar to the ones expressed in \autoref{ch:FlowSolver}, however with some changes. I will also make some simplifications to the model that I will note in the following derivation of the new governing equations. Darcy's law, expressing the flux between two cells are given in \myeqref{eq:pressSolverDarcy}, but since our grid only has one layer, we neglect the gravity Darcy's law becomes
+\subsection{Derivation of Governing Equations for Two Phase Flow}
+The governing equations for a two-phase flow are similar to the ones expressed in \autoref{ch:FlowSolver}, with some modifications. I will also make some simplifications to the model that I will note in the following derivation. Darcy's law, expressing the flux between two cells are given in \myeqref{eq:pressSolverDarcy}, but since our grid only has one layer, we neglect the gravity, and Darcy's law becomes
 \begin{equation*}
     \textbf{v} = - \frac{K}{\mu}\nabla p.
     \label{eq:DarcyNoGravity}
@@ -120,7 +122,7 @@ However, now we need to separate between flux of water, flux of oil and the sum 
 \begin{equation*}
 \sum_\alpha S_\alpha = 1.
 \end{equation*}
-In this two phase situation $\alpha$ can be either $o$ for oil or $w$ for water. As an example, in a cell without water, the oil saturation will be $S_o = 1$ and water saturation $S_w = 0$.  Since the permeability of a cell depends on the fluid flowing through the cell, we cannot find the specific flux by simply multiplying with the saturation. To handle this we introduce the property relative permeability. Relative permeability is usually represented as an analytic function, and I have chosen to use the simplest approximation given by
+In this two phase situation $\alpha$ can be either $o$ for oil or $w$ for water. As an example, in a cell without water, the oil saturation will be $S_o = 1$ and water saturation $S_w = 0$.  Since the permeability of a cell depends on the fluid flowing through the cell, we cannot find the phase flux by simply multiplying Darcy's law with the saturation. To get an expression for the phase flux, we introduce the property relative permeability. Relative permeability is usually represented as an analytic function, and I have chosen to use one of the simplest commonly used approximations, given by
 \begin{equation*}
 k_{r\alpha} = S_\alpha^2,
 \end{equation*}
@@ -128,17 +130,17 @@ for both water and oil. The flux for a given phase is then given by the modified
 \begin{equation*}
 \textbf{v}_\alpha = - \frac{Kk_{r\alpha}}{\mu_\alpha}\nabla p_\alpha = -K\lambda_\alpha\nabla p_\alpha.
 \end{equation*}
-$p_\alpha$ is the pressure for the given phase and $\lambda_\alpha$ is called the mobility of phase $\alpha$. The difference between the oil pressure and the water pressure is given by the capillary pressure, $p_c = p_o - p_w$. For oil and water, the capillary pressure would cause the water to rise in the reservoir. However, in this model we neglect capillary pressure and the pressure in the oil and the water is considered to be equal. Now that we have an expression for the phase flux we obtain the conservation equation for each phase:
+$p_\alpha$ is the pressure for the given phase and $\lambda_\alpha$ is called the mobility of phase $\alpha$. The difference between the oil pressure and the water pressure, is given by the capillary pressure, $p_c = p_o - p_w$. For oil and water, the capillary pressure would cause the water to rise in the reservoir. However, in this model we neglect capillary pressure and the oil- and water pressure are considered to be equal. Now that we have an expression for the phase flux, we obtain the conservation equation for each phase:
 \begin{equation}
     \frac{\partial}{\partial t}(\phi \rho_\alpha S_\alpha) + \nabla\cdot(\rho_\alpha\textbf{v}_\alpha) = \rho_\alpha q_\alpha.
     \label{eq:continuityEqMultiPhase}
 \end{equation}
-If you remove $\alpha$ from \myeqref{eq:continuityEqMultiPhase}, it becomes the same equation as \myeqref{eq:continuityEqPressure}, except that here we have taken $\rho$ outside of $q$. In our two phase example we assume both phases to be incompressible such that the governing equations are given by
+If you remove $\alpha$ from \myeqref{eq:continuityEqMultiPhase}, it becomes the same equation as \myeqref{eq:continuityEqPressure}, except that in \myeqref{eq:continuityEqPressure}, $\rho$ is inside of the source term $q$. In our two phase example we assume both phases to be incompressible such that the governing equations are given by
 \begin{equation}
     \frac{\partial}{\partial t}(\phi S_\alpha) + \nabla\cdot\textbf{v}_\alpha =  q_\alpha, \hspace{1em} \alpha \in o, w.
     \label{eq:continuityEqsMultiPhaseIncomp}
 \end{equation}
-Since $S_o = 1 - S_w$, the equations from \myeqref{eq:continuityEqsMultiPhaseIncomp} contain two unknown variables, the saturation, for either water or oil, and the pressure. Firstly we want to obtain an equation for the pressure. By adding the two equations from \myeqref{eq:continuityEqsMultiPhaseIncomp} we obtain
+Since $S_o = 1 - S_w$, the equations from \myeqref{eq:continuityEqsMultiPhaseIncomp} contain only two unknown variables, the saturation, for either water or oil, and the pressure. This means that we have enough equations to solve for the unknown variables and we could solve them simultaneously. However, the equations are strongly coupled, and for this example I will rather obtain two equations, one describing the pressure, and one describing the water saturation, such that they are less coupled. This gives us the opportunity to solve the equations separately using an operator splitting method I will explain later. We start by obtaining an equation for the pressure. By adding the two equations from \myeqref{eq:continuityEqsMultiPhaseIncomp} we obtain
 \begin{equation*}
     \phi \frac{\partial}{\partial t}(S_o + S_w) + \nabla\cdot(\textbf{v}_o + \textbf{v}_w) = q_o + q_w.
 \end{equation*}
@@ -146,33 +148,48 @@ Since $S_o + S_w = 1$, we can remove the time dependent term, and by defining th
 \begin{equation*}
     \textbf{v} = \textbf{v}_o + \textbf{v}_w = -K\lambda_o\nabla p -K\lambda_w\nabla p = -K\lambda\nabla p,
 \end{equation*}
-and the total source term as $q = q_o + q_w$, we obtain the pressure equation
-\begin{equation*}
+and the total source term as $q = q_o + q_w$, we obtain the pressure equation:
+\begin{equation}
     -\nabla\cdot(K\lambda\nabla p) = q.
-\end{equation*}
-Next we want to derive an equation for the water saturation. \myeqref{eq:continuityEqsMultiPhaseIncomp} with $\alpha = w$ gives one formulation, but we want an expression that depend on the total flux, and not the water flux. The reason for this will be explained later. To find a relation between the water flux and the total flux, observe that the difference between the waterflux multiplied with the mobility of oil and the oil flux multiplied with the mobility of water is equal to zero.
+    \label{eq:pressureEq}
+\end{equation}
+Next we derive the equation for the water saturation. \myeqref{eq:continuityEqsMultiPhaseIncomp} with $\alpha = w$ gives one formulation, but we want an expression that depend on the total flux, and not the water flux. The reason for this will be explained later. To find a relation between the water flux and the total flux, observe that the difference between the water flux, multiplied with the mobility of oil, and the oil flux, multiplied with the mobility of water, is equal to zero.
 \begin{align*}
     \lambda_o\textbf{v}_w - \lambda_w \textbf{v}_o = \lambda\textbf{v}_w - \lambda_w\textbf{v} &= (\lambda_o + \lambda_w)\textbf{v}_w - \lambda_w(\textbf{v}_o + \textbf{v}_w) \\
-    &= \left(\lambda_o\lambda_w + \lambda_w^2 - (\lambda_o\lambda_w + \lambda_w^2)\right)\left(-K\nabla p\right)\\
+    &= \left(\lambda_o\lambda_w + \lambda_w^2 - (\lambda_w^2 + \lambda_w\lambda_o)\right)\left(-K\nabla p\right)\\
     &= 0
 \end{align*}
 This gives us the relation 
 \begin{equation*}
     \textbf{v}_w = \frac{\lambda_w}{\lambda_o + \lambda_w}\textbf{v} = f_w\textbf{v},
 \end{equation*}
-where $f_w$ is called the fractional water flow.
-\begin{figure}
+where $f_w$ is called the fractional water flow. Inserting the expression for water flux into the conservation law for the water phase, given in  \myeqref{eq:continuityEqsMultiPhaseIncomp}, we obtain the transport equation:
+\begin{equation}
+    \phi \frac{\partial S_w}{\partial t} + \nabla\cdot\left(f_w\textbf{v}\right) =  q_w.
+    \label{eq:transportEq}
+\end{equation}
+Even though we now have separated the governing equations into a pressure equation and a transport equation, they are still coupled. \myeqref{eq:pressureEq} is depending on the water saturation in the total mobility $\lambda$ and \myeqref{eq:transportEq} is depending on the pressure in Darcy's law for the flux, \textbf{v}. However, this coupling is smaller than in \myeqref{eq:continuityEqsMultiPhaseIncomp}, and this weaker coupling opens up the opportunity to use an operator splitting method. This consist of first solving the pressure equation, holding the saturation constant. Then when we have found the correct pressure for this time step, we hold the pressure and the total flux constant, and solve the transport equation. Since the total flux is held constant as well, when solving the transport equation, the total flux calculated in the pressure equation can be used to solve the transport equation. This is why we wanted find an expression for the water flux, given by the total flux. When the water saturation is updated, the pressure equation is again solved with constant saturation, and so on.
+
+\subsection{Implementation of Two Phase Solver}
+In the implementation of the two-phase simulator for the SPE10 grid, a lot will be very similar as for the previous single-phase implementation from \autoref{sec:FlowSolverLADImplementation}. The \texttt{FlowSystem} struct is replaced with a \texttt{TwoPhaseSystem} struct, that hold the residuals and Jacobians for both equations. In addition to this, for implementation convenience purposes, it also hold the current pressure and water saturation:
+\lstinputlisting{code/TwoPhasSystem.jl}
+Naturally, instead of having a single assemble equations function, the simulator now has two. These are called \texttt{assemblePressureEquations!()} and \texttt{assembleTransportEquations!()}. These are implemented with the same structure as \texttt{assembleFlowSystem!()}, only that the equations calculated are different. The main loop that controls the simulation is also extended. As explained above, the pressure equation and the transport equation are solved interchangeably and the implementation of this can be seen below.
+\lstinputlisting{code/TwoPhaseSimulator.jl}
+
+\subsection{Two-Phase Solver Results}
+Even though we are most interested to see how the AD tools perform, we also have to see what we are simulating to make sure that it is correct implemented. \autoref{fig:waterSatResultsSPE10} shows the development of the water saturation in the SPE10 grid, for a simulation over three years. The total amount of water we have injected after three years is 0.135 of the total pore volume in the reservoir. As we can see from the figure, the assumption we had that the water will flow to the left was correct. We can also see that it follows paths in the reservoir that are optimal for the water to flow. One example that is easy to spot, is that the water, at least in the beginning, avoids the area straight left of the injector. If we go back to \autoref{fig:porositySPE10} and \autoref{fig:permeabilitySPE10}, we can see that in this area, both the porosity and the permeability is low.
+\begin{figure}[htb]
     \centering
     \includegraphics[width = \textwidth]{figures/waterSaturation4x1ThreeYears.eps}
-    \caption{\todo[inline]{Gjøre plottene større og med mindre svarte kanter}}
+    \caption{Color plot of the water saturation development in the SPE10 grid over a period of three years. Total injected water after three years is 13.5\% of the total pore volume in the reservoir.}
     \label{fig:waterSatResultsSPE10}
 \end{figure}
-
-
+\todo[inline]{Gjøre plottene større og med mindre svarte kanter}
+To benchmark the AD performance in the two-phase simulation I have, similar to the previous benchmarks, separated the AD calculations from the linear solver. The simulation in \autoref{fig:waterSatResultsSPE10} used approximately 150 time steps and for each time step, the Newton-Raphson method used two iterations to solve the pressure equations and approximately six iterations to solve the transport equations. The benchmark I have performed is essentially this same simulation, but without the linear solver and the update of the pressure and the water saturation. This will give us a good estimation on how much time the simulator spend on AD during the simulation. Since the benchmark does not update the pressure and water saturation, it could have been the case that the compiler figure out that there is no need to perform all calculations, and that it for example is enough doing it only once. However, this is tested and it is not the case. The benchmark is performed for the local AD method, the \texttt{CJAD} method and for the AD tool in MRST. The results of the benchmark can be seen in \autoref{tab:TwoPhaseBenchmark}. The table shows that \texttt{CJAD} and MRST perform similar, with about 30 seconds in total. The local AD outperforms both the two other methods, and for this benchmark, it is about six times as fast.
 \begin{table}[htb]
     \centering
     \caption{Write caption}
-    \label{tab:FlowSolverAssemblyTestWithLAD}
+    \label{tab:TwoPhaseBenchmark}
     \def\arraystretch{1.5}
     \begin{tabular}{ccc}
     \textbf{Local AD} & \textbf{CJAD} & \textbf{MRST}\\
@@ -181,6 +198,6 @@ where $f_w$ is called the fractional water flow.
         \hline
     \end{tabular}
 \end{table}
-
+This result gives us an even stronger indication that Julia is a language that can be used both to create quick simulators using a high-level and user-friendly AD methods, like what is implemented in MRST, as well as to create more performance strong simulators, using low-level implementations like in OPM.
 
 \todo[inline]{Se på parallellisering for lokal AD?}
