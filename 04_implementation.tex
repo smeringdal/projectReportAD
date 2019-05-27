@@ -186,8 +186,8 @@ Then for the primary variable \textbf{y} we obtain the Jacobian
 \end{equation}
 We immediately observe that two of the multiplications are unnecessary, since one of the matrices is a null matrix. Remember then that the left matrix in all the calculations above actually is a vector that we have transformed into a diagonal matrix to illustrate how the element-wise multiplication happens. This means that when the previous Jacobian is a diagonal matrix, what we actually can do to obtain the new Jacobian, is element-wise multiplication between the vector on the left hand side and the vector that is the diagonal on the Jacobian. And even better, when the previous Jacobian is the identity matrix, like in calculation \eqref{eq:JacobianCalculationY}, the product is simply a diagonal matrix with the left hand side vector on the diagonal. This is where the idea of optimizing \texttt{FAD} comes from. By knowing what type of Jacobian we have at all times, we can sometimes take safe shortcuts in our calculations. 
 
-\subsection{Custom Jacobian Automatic Differentiation}
-Custom Jacobian Automatic Differentiation (\texttt{CJAD}) is what I have chosen to call the optimized \texttt{FAD}. \textit{Custom Jacobian} comes from having four different types of Jacobians. The structure of \texttt{CJAD} is similar to \texttt{FAD}, but instead of storing all the Jacobians as a vector consisting of \texttt{SparseMatrixCSC}-types, each element in the vector is now of type \texttt{CustomJac}:
+\subsection{\texttt{CustomJacobianAutoDiff}}
+\texttt{CustomJacobianAutoDiff} (\texttt{CJAD}) is what I have chosen to call the optimized \texttt{FAD}. \textit{Custom Jacobian} comes from having four different types of Jacobians. The structure of \texttt{CJAD} is similar to \texttt{FAD}, but instead of storing all the Jacobians as a vector consisting of \texttt{SparseMatrixCSC}-types, each element in the vector is now of type \texttt{CustomJac}:
 \lstinputlisting{code/CJAD-struct.jl}
 \texttt{CustomJac} is an abstract type that has four structs that extend it:
 \begin{itemize}
