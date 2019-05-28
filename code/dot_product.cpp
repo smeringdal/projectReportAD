@@ -1,4 +1,4 @@
-
+// Code example from C++
 #include <iostream>
 int main() {
     int n = 5;
