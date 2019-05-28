@@ -13,7 +13,7 @@ and so on, as well as the chain- and product rules
     &\frac{d}{dx}f\bigl(g(x)\bigr) = g'(x)\cdot f'\bigl(g(x)\bigr)\\
     &\frac{d}{dx}f(x)\cdot g(x) = f'(x)\cdot g(x) + f(x)\cdot g'(x).
 \end{align*}
-The computer will then use these rules on symbolic variables to obtain the derivative of any given function. This will give perfectly accurate derivatives, but it is computationally demanding, and as f(x) becomes more complex, the calculations will become slow.
+The computer will then use these rules on symbolic variables to obtain the derivative of any given function. This will give perfectly accurate derivatives, but as the function evaluated becomes more complex, the computed expression for the derivative grows and becomes large. This could make the evaluation of these derivatives very slow. The reason for this effect, that is often referred to as expression swell, is that it is difficult to simplify the exact expressions calculated by symbolic differentiation. The more complex the function is, the larger will the expression for the exact derivative become, and for computer programs, which often include if-statements and for-loops, it can be very difficult to express the derivative efficiently using symbolic differentiation. 
 
 If AD is not symbolic differentiation, you might think that it is finite differences, where you use the definition of the derivative
 \begin{equation*}
@@ -211,7 +211,6 @@ The calculation of the derivatives together with a dependency graph can be seen 
  	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-\todo[inline]{Mindre font på figurtittel}
 Comparing this to the method of dual numbers from \autoref{sec:DualNumbers}, where we would have to evaluate $f$ three times, once for each derivative, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of the function. 
 The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
 
