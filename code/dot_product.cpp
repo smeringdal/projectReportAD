@@ -1,15 +1,10 @@
 // Code example from C++
 #include <iostream>
 int main() {
-    int n = 5;
-    int v[n];
-    int w[n];
-    for (int i = 0; i<n; i++) {
+    int n = 5; int v[n]; int w[n]; int dotProduct[n];
+    for (int i = 0; i<n; i++){
         v[i] = rand();
         w[i] = rand();
-    }
-    int dotProduct[n];
-    for (int i = 0; i<n; i++) {
         dotProduct[i] = v[i] * w[i];
     }
     std::cout<<"Dot product of random vectors:"<<std::endl;
@@ -19,6 +14,5 @@ int main() {
         } else{
             std::cout<<dotProduct[i]<<", ";
         }
-    }
-    return 0;
+    }return 0;
 }
