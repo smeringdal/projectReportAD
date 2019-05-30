@@ -8,7 +8,7 @@ Automatic differentiation (AD) is a method that enables a computer to numericall
     &\frac{d}{dx}\cos(x)  = -\sin(x), \\
     &\frac{d}{dx}\exp(x) = \exp(x), \\
 \end{align*}
-and so on, as well as the chain- and product rules
+and so on, as well as the chain- and product rule
 \begin{align*}
     &\frac{d}{dx}f\bigl(g(x)\bigr) = g'(x)\cdot f'\bigl(g(x)\bigr)\\
     &\frac{d}{dx}f(x)\cdot g(x) = f'(x)\cdot g(x) + f(x)\cdot g'(x).
@@ -19,7 +19,7 @@ If AD is not symbolic differentiation, you might think that it is finite differe
 \begin{equation*}
     \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
 \end{equation*}
-with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$ and then divide by a small number $h$. This means that any small rounding errors in the subtraction which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Hence, the finite-difference method is not fully robust and is not what we call AD.
+with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$, and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Hence, the finite-difference method is not fully robust and is not what we call AD.
 
 AD can be split into two different methods -- forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, the methods keep track of the function values and the corresponding values of the derivatives as we go. Both methods do this by separating each expression into a finite set of elementary operations. 
 
@@ -72,7 +72,7 @@ and lastly from the product rule, we get the correct tuple for $f(x)$
 \end{align*}
 This result equals what we obtain from the analytical expression evaluated at $x=2$
 \begin{equation*}
-    \big(\adpair{f(x)}{f_x(x)}\big) = \big(\adpair{x\cdot\exp(2x)}{(1+2x)\exp(2x)}\big).
+    \big(\adpair{f(x)}{f'(x)}\big) = \big(\adpair{x\cdot\exp(2x)}{(1+2x)\exp(2x)}\big).
 \end{equation*}
 
 
@@ -83,7 +83,7 @@ One approach to implementing forward AD is by dual numbers. Similarly to complex
     a + b\epsilon.
     \label{eq:DualNumbers}
 \end{equation}
-Here, $a$ and $b$ are scalars and correspond to the function value and the derivative value, whereas $\epsilon$ is like we have for complex numbers $i^2 = -1$, except that the corresponding relation for dual numbers is $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form \eqref{eq:DualNumbers}. We then get the following for addition
+Here, $a$ and $b$ are scalars and correspond to the function value and the derivative value, whereas $\epsilon$ is like we have for complex numbers $i^2 = -1$, except that the corresponding relation for dual numbers is $\epsilon^2 = 0$. The convenient part of implementing forward AD with dual numbers is that you get the differentiation rules for arithmetic operations for free. Consider the dual numbers $x$ and $y$ on the form of \eqref{eq:DualNumbers}. We then get the following for addition
 \begin{align*}
 x+y &= (a+b\epsilon)+(c+d\epsilon) = a+c+(b+d)\epsilon,
 \end{align*}
@@ -112,7 +112,7 @@ The drawback of implementing AD with dual numbers becomes clear for functions of
     f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)%\\
         =7+3\epsilon.
 \end{align*}
-Here, $7$ is the function value of $f$, while $3$ is the derivative value $f_x$ of $f$ with respect to $x$. To obtain $f_y$ and $f_z$, we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers -- when the function evaluated has $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
+Here, $7$ is the function value of $f$, while $3$ is the derivative value, $f_x$, of $f$ with respect to $x$. To obtain $f_y$ and $f_z$, we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers -- when the function evaluated has $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
 
 \subsection{Backward Automatic Differentiation}
 \label{sec:BackwardAD}
@@ -216,7 +216,7 @@ The disadvantage of backward AD is that to be able carry along function and deri
 
 \subsection{Forward Automatic Differentiation With Multiple Parameters}
 \label{sec:FADWithMultipleParameters}
-When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are alternative ways of implementing this rather than implementing with dual numbers and evaluating the function $n$ times.  \citet{doi:10.1137/080743627} describes a method that calculates all the derivatives in one function evaluation. To illustrate this method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
+When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are alternative ways of implementing this, rather than implementing with dual numbers and evaluating the function $n$ times.  \citet{doi:10.1137/080743627} describes a method that calculates all the derivatives in one function evaluation. To illustrate this method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
 \begin{equation*}
     [\adpair{x}{(1,0,0)^\top}]\hspace{2em},\hspace{2em}
     [\adpair{y}{(0,1,0)^\top}]\hspace{2em},\hspace{2em}
@@ -245,7 +245,7 @@ For numerical solution of (partial) differential equations, the functions we eva
         \frac{\partial f_m}{\partial x_1} & \dotsb & \frac{\partial f_m}{x_n}
     \end{pmatrix}.
 \end{align*}
-The forward AD method described earlier will be similar for a vector function as it was for a scalar function. However, going from scalar functions with multiple parameters to vector functions induce two important differences. The first is that the primary variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous example. As a simple illustration of the differences, consider the vector function $f = 2\cdot \textbf{x}\cdot \textbf{y}$ for primary variables $\textbf{x},\textbf{y}\in \Re^3$. Again, all multiplications are element-wise. Initialization of the primary variables gives
+The forward AD method described earlier will be similar for a vector function as it was for a scalar function. However, going from scalar functions with multiple parameters to vector functions induce two important differences. The first is that the primary variables need to be initialized with their Jacobians, and not just with a gradient vector. The Jacobian for a primary variable of dimension $n$ is the $n \times n$ identity matrix. The second change is that when evaluating new functions depending on the primary variables, the Jacobians corresponding to the functions will be calculated with matrix multiplication instead of the vector multiplication seen in the previous example. As a simple illustration of the differences, consider the vector function $f = 2\cdot \textbf{x}\cdot \textbf{y}$ for primary variables $\textbf{x},\textbf{y}\in \Re^3$ (we only consider element-wise multiplication). Initialization of the primary variables gives
 \begin{equation}
     \label{def:VectorAD}
     \textbf{x} = \left[\adpair{\begin{pmatrix}1\\2\\3
@@ -328,7 +328,7 @@ The simplest example for finding roots is for a scalar function $f$ with a scala
 \begin{equation*}
     x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)},
 \end{equation*}
-for an initial $x_0$, will converge to a root of $f$ given that $f$ is sufficiently smooth. With AD, this is quite simple to implement as you only have to define the function $f(x)$, and then AD finds $f'(x)$ automatically. You can then use the Newton-Raphson method directly. Exactly the same approach can be used to solve nonlinear systems in multiple dimensions. As a simple illustration, let us look at the \emph{linear} system 
+for an initial $x_0$, will converge to a root of $f$ given that $f$ is sufficiently smooth. With AD, this is quite simple to implement, as you only have to define the function $f(x)$, and then AD finds $f'(x)$ automatically. You can then use the Newton-Raphson method directly. Exactly the same approach can be used to solve nonlinear systems in multiple dimensions. As a simple illustration, let us look at the \emph{linear} system 
 \begin{equation}
     \textbf{A}\boldsymbol{x} = \textbf{b},
     \label{eq:linearSystem}
@@ -360,7 +360,7 @@ Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so \myeqref{eq:conse
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_two_cells.pdf}
-    \caption{Figure of two adjacent cells $\Omega_i$ and $\Omega_k$. The average value of the cell is given by $u_i$. The boundary between the cells is $\Gamma_{i,k}$ with value at the centre equal $\Bar{u}_{i,k}$ and outward normal vector $n_{i,k}$}
+    \caption{Figure of two adjacent cells $\Omega_i$ and $\Omega_k$. The average value of the cell is given by $u_i$. The boundary between the cells is $\Gamma_{i,k}$ with value at the centre equal $\tilde{u}_{i,k}$ and outward normal vector $n_{i,k}$}
     \label{fig:gridTwoCells}
 \end{figure}
 Now, the flux through the common interface $\Gamma_{i,k}$ can be computed by
@@ -445,7 +445,7 @@ where the function $\operatorname{sgn}(f)$ is defined as
 \end{align*}
 The discrete operators $\texttt{dDiv}$ and $\texttt{dGrad}$ can be represented in terms of sparse matrices that are simple to form from the mappings $F$ and $C_1,C_2$; see \cite{lieMrstUrl} for more details.
 
-The extra \texttt{d} in front of the names in included so that we later avoid name collision with Julia's built in \texttt{div} function. Now we can create discrete divergence and gradient operators, only based on the topology of the grid, so that the discrete Poisson equations we want to solve can be written very similar to the continuous case
+The extra \texttt{d} in front of the names stands for discrete and is included so that we later avoid name collision with Julia's built in \texttt{div} function. Now we can create discrete divergence and gradient operators, only based on the topology of the grid, so that the discrete Poisson equations we want to solve can be written very similar to the continuous case
 \begin{align*}
     -\nabla(\textbf{K}\nabla u) - q &= 0 \qquad \longleftrightarrow\qquad
     \textbf{F}(\textbf{u}) = \texttt{dDiv}(\textbf{T }\texttt{dGrad}(\textbf{u}))-\textbf{q} 
