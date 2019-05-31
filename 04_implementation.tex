@@ -31,7 +31,7 @@ The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If
 
 \subsection{\texttt{ForwardAutoDiff} (\texttt{FAD})}
 \label{sec:FAD}
-In the first implementation, the Jacobian, \texttt{jac}, is represented as a list of subblocks. Each element in the list is a sparse matrix that represent the Jacobian w.r.t. a single primary variable. This implementation gives the freedom to easily work with the subblocks of the Jacobian that correspond to a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I have called \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
+In the first implementation, the Jacobian, \texttt{jac}, is represented as a list of sub-blocks. Each element in the list is a sparse matrix that represent the Jacobian w.r.t. a single primary variable. This implementation gives the freedom to easily work with the sub-blocks of the Jacobian that correspond to a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I have called \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
 \lstinputlisting{code/FADStruct.jl}
 
 
@@ -53,7 +53,6 @@ which would indeed work. Nonetheless, a more elegant approach that fully exploit
 Now, the built-in \texttt{sum} function will work on AD variables since it knows how to iterate through the variables. When it adds up the values, the $+$ operator we defined above is being used, and not only that! All built-in functions that iterate through the input will also work (given that the functions they use on the variable also are overloaded). As an example, if we now overload the division operator as well, the \texttt{Base} function \texttt{mean} will also work on \texttt{FAD} variables with no extra work!
 
 \subsection{Element-wise and Vector Multiplication}
-%When one introduces AD for vectors, one needs to discuss how to handle multiplication and division.
 In mathematical programming languages like MATLAB and Julia, there is a difference between the $*$ and $.*$ operators. The first operator, $*$, is regular vector multiplication, meaning if $v$ is a row vector and $u$ is a column vector, both of length $n$, then $v*u$ is the normal vector product that results in a scalar, whereas $u*v$ gives an $n\times n$ matrix in which each row in $v$ is multiplied by the corresponding row value of $u$. An attempt to evaluate $u*u$ will end in an error message saying that \enquote{The dimensions do not match matrix multiplication}. 
 
 The $.*$ operator, on the other hand, represents element-wise multiplication. This means that if we have regular column vectors like $u$ and $w = v'$, where $w$ is the transpose of $v$, the evaluation of $u.*w$ will be element-wise multiplication of $u$ and $w$, into a new vector of the same dimensions as $u$ and $w$. Here, one needs to make a choice in the implementation of multiplication and division for AD in Julia, because as of now, there are no good ways of overloading any dot operators for custom types such as \texttt{FAD}. \emph{\citet{JuliaIssueDot}} explains the problems of overloading the element-wise $.*$ operator, and states that there is no good way of actually doing this. The issue has still not been resolved. With this in mind, and that there will only be used element-wise multiplication in this project, I have decided that I herein redefine $*$ and implement it as element-wise multiplication. This means that if I have written regular multiplication expressions consisting of at least one \texttt{FAD} variable, element-wise multiplication will be executed.
@@ -212,39 +211,39 @@ When both Jacobians are general sparse matrices, \texttt{CJAD} and \texttt{FAD} 
 \lstinputlisting{code/vectorAsMatrixTimesSparseJac.jl}
 I will call this method the \textit{matrix-multiplication} method. The second method keeps the vector form and uses element-wise multiplication between the vector and the \texttt{SparseMatrixCSC} matrix:
 \lstinputlisting{code/vectorTimesSparseJac.jl}
-I will call this the \textit{dot-multiplication} method. As it is difficult to say without first-hand knowledge of the implementation of \texttt{SparseMatrixCSC} which method is best to implement, I will test the two methods against each other. To test this, I have created a random vector of length 40 and a random sparse matrix of size $40\times 40$ having 20 percent nonzero elements. I then perform the element-wise multiplication 10 000 times to separate the efficiency of the two methods. To check which method is actually more efficient, and by how much, we can use the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. This function gives us the number of allocations, the amount of memory used, and the time spent.
-\autoref{tab:VectorMatrixMultiplicationSmallMatrix} reports the results\footnote{All benchmarks in this project are performed on a MacBook Pro (Retina, 13-inch, Late 2013), 2,8 GHz Intel Core i7 processor and 16 GB 1600 MHz DDR3 memory.} from this test.
+I will call this the \textit{dot-multiplication} method. As it is difficult to say without first-hand knowledge of the implementation of \texttt{SparseMatrixCSC} which method is best to implement, I will test the two methods against each other. To test this, I have created a random vector of length 40 and a random sparse matrix of size $40\times40$ having 20 percent nonzero elements. I then perform the element-wise multiplication 10,000 times to separate the efficiency of the two methods. To check which method is actually more efficient, and by how much, we can use the \textit{@btime} macro function from the \emph{\cite{BenchmarkTools}} library. This function gives us the number of allocations, the amount of memory used, and the time spent.
+\autoref{tab:VectorMatrixMultiplicationSmallMatrix} reports the results\footnote{All benchmarks in this project are performed on a MacBook Pro (Retina, 13-inch, Late 2013), 2.8 GHz Intel Core i7 processor and 16 GB 1,600 MHz DDR3 memory.} from this test.
 \begin{table}[H]
     \centering
-    \caption{The number of allocations, amount of memory, and time spent for element-wise multiplication of a vector of length 40 and a sparse matrix of size $40\times 40$ with 20 percent nonzero elements. The vector and matrix are multiplied together 10 000 times.}
+    \caption{The number of allocations, amount of memory, and time spent for element-wise multiplication of a vector of length 40 and a sparse matrix of size $40\times 40$ with 20 percent nonzero elements. The vector and matrix are multiplied together 10,000 times.}
     \label{tab:VectorMatrixMultiplicationSmallMatrix}
     \def\arraystretch{1.5}
     \begin{tabular}{cccc}
     \textbf{Method} & \textbf{Number of Allocations} & \textbf{Megabytes} & \textbf{Milliseconds} \\
         \hline
-         \textit{Matrix-multiplication} & 1 420 000 & 194 & 187 \\  
-         \textit{Dot-multiplication} & 60 000 & 264 & 87\\ 
+         \textit{Matrix-multiplication} & 1,420,000 & 194 & 187 \\  
+         \textit{Dot-multiplication} & 60,000 & 264 & 87\\ 
          \hline
     \end{tabular}
 \end{table}
-The test is unequivocal:  the \textit{dot-multiplication} method has far less allocations, is more than twice as fast, but it uses a bit more memory. Based on this it might tempting to say that the \textit{dot-multiplication} method is a better choice. However, in numerical solution of PDEs, the matrices we work with are generally much larger and very sparse. \autoref{tab:VectorMatrixMultiplicationFlowSolverMatrix} reports results for a more representative test example, in which I have used a matrix from \autoref{ch:FlowSolver}, which is of size $8000\times 8000$ and only contains 0.08 percent nonzero elements.
+The test is unequivocal:  the \textit{dot-multiplication} method has far less allocations, is more than twice as fast, but it uses a bit more memory. Based on this it might tempting to say that the \textit{dot-multiplication} method is a better choice. However, in numerical solution of PDEs, the matrices we work with are generally much larger and very sparse. \autoref{tab:VectorMatrixMultiplicationFlowSolverMatrix} reports results for a more representative test example, in which I have used a matrix from \autoref{ch:FlowSolver}, which is of size $8,000\times 8,000$ and only contains 0.08 percent nonzero elements.
 \begin{table}[H]
     \centering
-    \caption{The number of allocations, amount of memory, and time spent for element-wise multiplication of a vector of length 8000 and a matrix of size $8000\times 8000$ with 0.08 percent nonzero elements. The matrix is taken from \autoref{ch:FlowSolver}.}
+    \caption{The number of allocations, amount of memory, and time spent for element-wise multiplication of a vector of length 8,000 and a matrix of size $8,000\times 8,000$ with 0.08 percent nonzero elements. The matrix is taken from \autoref{ch:FlowSolver}.}
     \label{tab:VectorMatrixMultiplicationFlowSolverMatrix}
     \def\arraystretch{1.5}
     \begin{tabular}{cccc}
     \textbf{Method} & \textbf{Number of Allocations} & \textbf{Megabytes} & \textbf{Milliseconds} \\
         \hline
-         \textit{Matrix-multiplication} & 240 370 & 32 & 28 \\  
-         \textit{Dot-multiplication} & 180 & 10 243 & 2 458\\ 
+         \textit{Matrix-multiplication} & 240,370 & 32 & 28 \\  
+         \textit{Dot-multiplication} & 180 & 10,243 & 2,458\\ 
          \hline
     \end{tabular}
 \end{table}
 The dot-multiplication method still requires far less allocations, but now consumes a lot more memory than the \textit{matrix-multiplication} method. As a consequence, it is almost 100 times slower than the matrix-multiplication method! This shows that for the purpose of this implementation, the matrix-multiplication method is a much better choice.
 
 \subsection{Efficient Versus Readable and Elegant Code}
-There is usually a fine balance between writing efficient and readable/elegant code. Sometimes you have the opportunity to do both, but often you have to choose which of them you want to give most focus. At the end of \autoref{sec:FAD}, I explained how we can elegantly implement the \texttt{sum} function, and all other built-in functions that iterate through the \texttt{FAD}-variables, only by implementing the \texttt{iterate} function. This is a very elegant use of Julia's multiple dispatch system, as we get a lot of functionality "for free". The downside, however, is that we loose potential computational efficiency that we could achieve by implementing the \texttt{sum} function ourselves. Let us define a random function $\psi$, where the AD-representation and the \texttt{sum} of $\psi$ are given by
+There is usually a fine balance between writing efficient and readable/elegant code. Sometimes you have the opportunity to do both, but often you have to choose which of them you want to give most focus. At the end of \autoref{sec:FAD}, I explained how we can elegantly implement the \texttt{sum} function, and all other built-in functions that iterate through the \texttt{FAD}-variables, only by implementing the \texttt{iterate} function. This is a very elegant use of Julia's multiple dispatch system, as we get a lot of functionality "for free". The downside, however, is that we lose potential computational efficiency that we could achieve by implementing the \texttt{sum} function ourselves. Let us define a random function $\psi$, where the AD-representation and the \texttt{sum} of $\psi$ are given by
 \begin{multicols}{2}
     \noindent
     \begin{align*}
@@ -287,7 +286,7 @@ Instead of retrieving each row, one by one, like we did using \texttt{Base.sum},
     \textbf{Function} & \textbf{Number of Allocations} & \textbf{Kilobytes} & \textbf{Microseconds} \\
         \hline
          \texttt{sum} & 40 & 79 & 81 \\  
-         \texttt{Base.sum} & 28371 & 19 597 & 58 051\\ 
+         \texttt{Base.sum} & 28,371 & 19,597 & 58,051\\ 
          \hline
     \end{tabular}
 \end{table}
@@ -297,7 +296,7 @@ The second issue I want to discuss is vectorized and devectorized code. The diff
 \lstinputlisting{code/devectorizedExample.jl}
 In a blog post, former Julia developer John Myles White explains how Julia is faster at executing devectorized code compared to vectorized code \citep{Vectorization}. This is in sharp contrast to other high-level mathematical programming languages like MATLAB, in which conventional wisdom would tell you that you have to vectorize your code to get the best computational performance. When you vectorize, MATLAB uses optimized code in C to execute the calculations. If you devectorize your code by calling a for-loop, you potentially bring in a lot of extra overhead. Note that, as mentioned in \autoref{sec:numericalLang}, recent development of MATLAB's just-in-time (JIT) compiler has changed the landscape a bit, and devectorized code can sometimes be significantly faster than vectorized code, in particular if the latter has to allocate a lot of temporary memory. 
 
-In Julia, for-loops are generally close to matching C's speed. So you might say that "why not devectorize all the code?" And that could indeed be done, but here we have another example of the conflict between efficient and readable code. From the example with element-wise multiplication of the two vectors, the vectorized form is much more compact and readable, but according to White, the devectorized version is faster. To make a decision whether to implement vectorized or devectorized, we need to know more specifically what the differences are. White's blog post is from 2013, and since then, the vectorization in Julia has improved. Steven G. Johnson has written a newer blog post from 2017 \emph{\citep{MoreDotsJuliaBlog}}, in which he closer explains the reason why it is difficult to obtain the same speed for vectorized code as we have for devectorized code in a language like Julia. To explain this, consider two different vector functions $f$ and $g$ that we want to multiply element-wise
+In Julia, for-loops are generally close to matching C's speed. So you might say that \enquote{why not devectorize all the code?} And that could indeed be done, but here we have another example of the conflict between efficient and readable code. From the example with element-wise multiplication of the two vectors, the vectorized form is much more compact and readable, but according to White, the devectorized version is faster. To make a decision whether to implement vectorized or devectorized, we need to know more specifically what the differences are. White's blog post is from 2013, and since then, the vectorization in Julia has improved. Steven G. Johnson has written a newer blog post from 2017 \emph{\citep{MoreDotsJuliaBlog}}, in which he closer explains the reason why it is difficult to obtain the same speed for vectorized code as we have for devectorized code in a language like Julia. To explain this, consider two different vector functions $f$ and $g$ that we want to multiply element-wise
 \begin{equation*}
     h(x,y) = f(x) \cdot g(y), \hspace{3em} f(x) = \exp(x), \hspace{3em} g(y) = \log(y).
 \end{equation*}
@@ -308,19 +307,19 @@ According to White, this should be the fastest way of obtaining $h(x,y)$. Second
 \lstinputlisting{code/dotsInsideEx.jl}
 Lastly, we do not vectorize the functions $f$ and $g$, but when we call them with the vectors $x$ and $y$, we use the dot operators (that in reality is the \texttt{broadcast(...)} function) on the functions to tell the Julia compiler that the functions should be executed element-wise on the input parameters. I have called this method \texttt{dotsOutside}:
 \lstinputlisting{code/dotsOutsideEx.jl}
-To separate the three methods, I have calculated $h(x,y)$ 1000 times for random $x$ and $y$ vectors of length 100 000 and evaluated the performance using \textit{@btime}. \autoref{tab:dotOperator} reports the results.
+To separate the three methods, I have calculated $h(x,y)$ 1,000 times for random $x$ and $y$ vectors of length 100,000 and evaluated the performance using \textit{@btime}. \autoref{tab:dotOperator} reports the results.
 
 \begin{table}[H]
     \centering
-    \caption{Table  with  the  number  of  allocations,  memory  usage,  and  runtime  spent  by  evaluating $h(x,y) = \exp(x)\cdot\log(y)$ $1\hspace{0.2em}000$ times for three different methods; $x$ and $y$ are random vectors of length $100\hspace{0.2em}000$.}
+    \caption{Table  with  the  number  of  allocations,  memory  usage,  and  runtime  spent  by  evaluating $h(x,y) = \exp(x)\cdot\log(y)$ $1,000$ times for three different methods; $x$ and $y$ are random vectors of length $100,000$.}
     \label{tab:dotOperator}
     \def\arraystretch{1.5}
     \begin{tabular}{cccc}
     \textbf{Method} & \textbf{Number of Allocations} & \textbf{Megabytes} & \textbf{Seconds} \\
         \hline
-         \texttt{devectorized} & 2000 & 789 & 2.104 \\
-         \texttt{dotsInside} & 6000 & 2 405 & 2.704 \\ 
-         \texttt{dotsOutside} & 2000 & 789 & 2.121 \\  
+         \texttt{devectorized} & 2,000 & 789 & 2.104 \\
+         \texttt{dotsInside} & 6,000 & 2,405 & 2.704 \\ 
+         \texttt{dotsOutside} & 2,000 & 789 & 2.121 \\  
          \hline
     \end{tabular}
 \end{table}
@@ -345,8 +344,7 @@ f(x,y,z)  = \exp(2xy) - 4xz^2 + 13x - 7, \qquad x,y,z \in \Re^n.
     \label{fig:benchmarkADVectorFunction}
 \end{figure}
 \autoref{fig:benchmarkADVectorFunction} reports six different graphs. The first thing you observe is that \texttt{ForwardDiff} scales very badly as n becomes large. This is because it creates and works with the full $3n \times 3n$ Jacobian matrix as discussed in \autoref{sec:ADInJulia}. I stopped the benchmark of \texttt{ForwardDiff} for $n = 3^8$, as the Jacobian at this point already has more than 380 million elements. We can nevertheless observe that for small vectors, the methods implemented in MATLAB, as well as \texttt{FAD} and \texttt{CJAD}, have more overhead than \texttt{ForwardDiff} and the analytic solution. This makes them slower for small $n$, but as $n$ grows, this overhead becomes quickly negligible. Based on \autoref{fig:benchmarkADVectorFunction}, from a numerical simulation point of view, \texttt{ForwardDiff} is useless for obtaining the Jacobian of functions, as it scales badly for increasing $n$.
-\todo[inline]{referere til figur i neste kapittel angående forwardDiff?}
-Apart from the conclusion on \texttt{ForwardDiff}, we can observe that it is a change in dominance at $n = 3^7 = 2187$. For shorter vectors, both methods implemented in Julia are more efficient than the two methods in MATLAB. For $n>2187$ \texttt{FAD} is the slowest, followed by \texttt{MRST}. Hence, as $n$ becomes larger than 2187, the methods in Julia and MATLAB that exploit the diagonal structure of the Jacobian perform better than the ones that only use a sparse matrix structure. This makes sense, as the evaluation of $f$ will only give a diagonal Jacobian. As $n$ becomes large, \texttt{CJAD} and \texttt{MRST\_diagonal} perform very similarly and their computational costs approach the analytic evaluation. What is also interesting to see is that whereas \texttt{CJAD} always is faster than \texttt{FAD}, \texttt{MRST\_diagonal} is less efficient than \texttt{MRST} for short vectors. Assuming that both the MRST implementations are optimized, this indicates that the elegant way of implementing a custom Jacobian in Julia using multiple dispatch adds very little overhead compared to MATLAB. 
+Apart from the conclusion on \texttt{ForwardDiff}, we can observe that it is a change in dominance at $n = 3^7 = 2,187$. For shorter vectors, both methods implemented in Julia are more efficient than the two methods in MATLAB. For $n>2,187$ \texttt{FAD} is the slowest, followed by \texttt{MRST}. Hence, as $n$ becomes larger than $2,187$, the methods in Julia and MATLAB that exploit the diagonal structure of the Jacobian perform better than the ones that only use a sparse matrix structure. This makes sense, as the evaluation of $f$ will only give a diagonal Jacobian. As $n$ becomes large, \texttt{CJAD} and \texttt{MRST\_diagonal} perform very similarly and their computational costs approach the analytic evaluation. What is also interesting to see is that whereas \texttt{CJAD} always is faster than \texttt{FAD}, \texttt{MRST\_diagonal} is less efficient than \texttt{MRST} for short vectors. Assuming that both the MRST implementations are optimized, this indicates that the elegant way of implementing a custom Jacobian in Julia using multiple dispatch adds very little overhead compared to MATLAB. 
 
 The test case just discussed is highly idealized: because each element $f[i]$ of $f$ does not depend on $x[k]$, $y[k]$ and $z[k]$ for $k\not=i$, the Jacobians will keep a diagonal structure for $f$. This means that \texttt{CJAD} never uses its \texttt{SparseJac} type and \texttt{MRST\_diagonal} can use its optimized implementation for diagonal Jacobians. If we, for example, want to calculate something like
 \begin{equation*}

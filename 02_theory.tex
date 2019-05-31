@@ -105,7 +105,7 @@ This is very convenient, but how does dual numbers handle elementary functions l
     f(x) = f(a+b\epsilon) &= f(a) + \frac{f'(a)}{1!}(b\epsilon) + \frac{f''(a)}{2!}(b\epsilon)^2+\dots%\\
         =f(a) + f'(a)b\epsilon.
 \end{align*}
-This means that to make dual numbers handle elementary functions, the first-order Taylor expansion needs to be implemented. In practise, this amounts to implementing the elementary differentiation rules described in \eqref{eq:elementaryFunctions}. 
+This means that to make dual numbers handle elementary functions, the first-order Taylor expansion needs to be implemented. In practice, this amounts to implementing the elementary differentiation rules described in \eqref{eq:elementaryFunctions}. 
 
 The drawback of implementing AD with dual numbers becomes clear for functions of multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter, and the rest as constants:
 \begin{align*}
@@ -321,7 +321,7 @@ Finally, the expression for the vector function $f$ is found by observing that e
 \end{align*}
 \section{Applications of Automatic Differentiation}
 \label{sec:ApplicationsAD}
-AD can be used in a wide spectre of applications; common for many of them is that we have a vector or scalar function we want to minimize or find the roots of. This section considers some of the applications where AD can be used -- from solving simple linear systems to solving the Poisson equation with discrete divergence and gradient operators.
+AD can be used in a wide specter of applications; common for many of them is that we have a vector or scalar function we want to minimize or find the roots of. This section considers some of the applications where AD can be used -- from solving simple linear systems to solving the Poisson equation with discrete divergence and gradient operators.
 
 \subsection{The Newton-Raphson Method}
 The simplest example for finding roots is for a scalar function $f$ with a scalar input $x$. Then the Newton--Raphson method
