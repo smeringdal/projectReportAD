@@ -12,3 +12,5 @@ cmake-build-debug/**
 # OSX / *nix default autosave extension MATLAB
 *.m~
 .texpadtmp/
+*converted-to.pdf
+
