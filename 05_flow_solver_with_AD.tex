@@ -65,15 +65,16 @@ for the fluid density given by \myeqref{eq:pressureSolverDensity} and $g$ as the
 After initializing the grid we want to define the discrete gradient and divergence operators, as well as the transmissibilities as explained in \myeqref{eq:transmissibility}. This is done by exploiting that we have all the necessary information about the grid properties, such as the cells centroid coordinates, facets area, and so on, stored in the struct \texttt{G}. In \texttt{rock} we have stored the permeability inside each cell that will affect the flux through each facet. With all this information we can now obtain the transmissibilities \texttt{T} and the discrete operators
 \lstinputlisting{code/grad_and_div.jl}
 
-The matrix C in the discrete operators are created such that when it is multiplied by the pressure $p$, the result becomes the pressure difference between two adjacent cells, as defined in \myeqref{eq:discreteGradient}. The matrix C is stored as a sparse matrix, and the reason why is clear from \autoref{fig:discreteOperatorsC}, which shows the sparse  structure of the matrix. The divergence operator is made using the fact that in the continuous case, the gradient operator is the adjoint of the divergence operator
-\begin{wrapfigure}{r}{5.5cm}
+\begin{wrapfigure}{R}{5.5cm}
     \includegraphics[width=\linewidth]{figures/flowSolver_discrete_operators_C.eps}
     \caption{Structure of the discrete operator \texttt{C}.}
     \label{fig:discreteOperatorsC}
 \end{wrapfigure}
+The matrix C in the discrete operators are created such that when it is multiplied by the pressure $p$, the result becomes the pressure difference between two adjacent cells, as defined in \myeqref{eq:discreteGradient}. The matrix C is stored as a sparse matrix, and the reason why is clear from \autoref{fig:discreteOperatorsC}, which shows the sparse  structure of the matrix. The divergence operator is made using the fact that in the continuous case, the gradient operator is the adjoint of the divergence operator
 \begin{equation*}
     \int_\Omega p\nabla \cdot \vec{v} d\Omega + \int_\Omega \vec{v}\nabla p d\Omega = 0.
 \end{equation*}
+
 This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
 
 
