@@ -13,7 +13,7 @@ and so on, as well as the chain- and product rule
     &\frac{d}{dx}f\bigl(g(x)\bigr) = g'(x)\cdot f'\bigl(g(x)\bigr)\\
     &\frac{d}{dx}f(x)\cdot g(x) = f'(x)\cdot g(x) + f(x)\cdot g'(x).
 \end{align*}
-The computer will then use these rules on symbolic variables to obtain the derivative of any given function. This will give perfectly accurate derivatives, but as the function evaluated becomes more complex, the computed expression for the derivative grows and becomes large. This could make the evaluation of these derivatives very slow. The reason for this effect, that is often referred to as expression swell, is that it is difficult to simplify the exact expressions calculated by symbolic differentiation. The more complex the function is, the larger will the expression for the exact derivative become, and for computer programs, which often include if-statements and for-loops, it can be very difficult to express the derivative efficiently using symbolic differentiation. 
+The computer will then use these rules on symbolic variables to obtain the derivative of any given function. This will give perfectly accurate derivatives, but as the function evaluated becomes more complex, the computed expression for the derivative grows and becomes large. This will make the evaluation of these derivatives very slow. The reason for this effect, that is often referred to as expression swell, is that it is difficult to simplify the exact expressions calculated by the symbolic differentiation. The more complex the function is, the larger will the expression for the exact derivative become, and for computer programs, which often include if-statements and for-loops, it can be very difficult to express the derivative efficiently using symbolic differentiation. 
 
 If AD is not symbolic differentiation, you might think that it is finite differences, where you use the definition of the derivative
 \begin{equation*}
@@ -56,7 +56,7 @@ When these arithmetic operators and the elementary functions are implemented, yo
 The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD variables with derivative equal to 0, such that
 \begin{align*}
     2x &= [ \adpair{2}{0}  ]\cdot [ \adpair{2}{1} ] %\\
-    =[ \adpair{2\cdot2}{0\cdot1 + 2\cdot 1}  ]%\\
+    =[ \adpair{2\cdot2}{0\cdot2 + 2\cdot 1}  ]%\\
     =[ \adpair{4}{2} ].
 \end{align*}
 After this computation, we get from the exponential
@@ -151,9 +151,9 @@ for some $s$ to be chosen.
 If we again choose  $f(x) = x\cdot\exp(2x)$ and expand it using the same sequence of elementary functions as in \eqref{eq:BackwardADSeperationSimple}, the expressions from the chain rule \eqref{eq:chainRuleReverse} become
 \begin{alignat*}{2}
     \frac{\partial s}{\partial g_3} &= \text{unknown}\\
-    \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} &=& x\cdot \frac{\partial s}{\partial g_3} \\
-    \frac{\partial s}{\partial g_1} &= \frac{\partial g_3}{\partial g_1}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial g_1}\cdot \frac{\partial s}{\partial g_2} &=& g_2 \cdot \frac{\partial s}{\partial g_2} \\
-    \frac{\partial s}{\partial x} &= \frac{\partial g_3}{\partial x}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial x}\cdot \frac{\partial s}{\partial g_2} + \frac{\partial g_1}{\partial x}\cdot \frac{\partial s}{\partial g_1} &=& g_2\cdot \frac{\partial s}{\partial g_3} + 2\cdot \frac{\partial s}{\partial g_1}.\\
+    \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} = x\cdot \frac{\partial s}{\partial g_3} \\
+    \frac{\partial s}{\partial g_1} &= \frac{\partial g_3}{\partial g_1}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial g_1}\cdot \frac{\partial s}{\partial g_2} = g_2 \cdot \frac{\partial s}{\partial g_2} \\
+    \frac{\partial s}{\partial x} &= \frac{\partial g_3}{\partial x}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial x}\cdot \frac{\partial s}{\partial g_2} + \frac{\partial g_1}{\partial x}\cdot \frac{\partial s}{\partial g_1} = g_2\cdot \frac{\partial s}{\partial g_3} + 2\cdot \frac{\partial s}{\partial g_1}.\\
 \end{alignat*}
 By substituting $s$ with $g_3$ gives
 \begin{align*}

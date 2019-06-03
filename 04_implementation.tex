@@ -34,7 +34,6 @@ The \texttt{val} variable is a vector with elements of type \texttt{Float64}. If
 In the first implementation, the Jacobian, \texttt{jac}, is represented as a list of sub-blocks. Each element in the list is a sparse matrix that represent the Jacobian w.r.t. a single primary variable. This implementation gives the freedom to easily work with the sub-blocks of the Jacobian that correspond to a single primary variable. Before introducing the second implementation of the Jacobian, I will continue to explain the implementation of what I have called \texttt{ForwardAutoDiff}(\texttt{FAD}), which is defined with the following struct:
 \lstinputlisting{code/FADStruct.jl}
 
-
 To obtain a working AD library, we need to implement operators for the \texttt{FAD} data structure. The importance of how you implement the AD operators and elementary functions can be expressed in a short example: Assume you have two \texttt{FAD} variables $x$ and $y$ and that you want to compute the function $f(x,y) = y+\exp(2xy)$. If the implementation is based on making new functions that take in \texttt{FAD}-variables as input parameters, the evaluation of $f$ will look something like this: 
 \begin{center}
     $f$ = \texttt{FADplus}($y$,\texttt{FADexp}(\texttt{FADtimes}(2,\texttt{FADtimes}($x,y$)))).
@@ -184,7 +183,7 @@ Then for the primary variable \textbf{y} we obtain the Jacobian
 We immediately observe that two of the multiplications are unnecessary, since one of the matrices is a null matrix. Remember that the left matrix in all the calculations above actually is a vector that we have transformed into a diagonal matrix to illustrate how the element-wise multiplication happens. This means that when the previous Jacobian is a diagonal matrix, what we actually can do to obtain the new Jacobian, is element-wise multiplication between the vector on the left hand side and the vector that is the diagonal on the Jacobian. And even better, when the previous Jacobian is the identity matrix, like in calculation \eqref{eq:JacobianCalculationY}, the product is simply a diagonal matrix with the left hand side vector on the diagonal. This is where the idea of optimizing \texttt{FAD} comes from. By knowing what type of Jacobian we have at all times, we can sometimes take safe shortcuts in our calculations. 
 
 \subsection{\texttt{CustomJacobianAutoDiff}}
-\texttt{CustomJacobianAutoDiff} (\texttt{CJAD}) is what I have chosen to call the optimized \texttt{FAD}. \textit{Custom Jacobian} comes from having four different types of Jacobians. The structure of \texttt{CJAD} is similar to \texttt{FAD}, but instead of storing all the Jacobians as a vector consisting of \texttt{SparseMatrixCSC}-types, each element in the vector is now of type \texttt{CustomJac}:
+The optimized \texttt{FAD} is called \texttt{CustomJacobianAutoDiff} (\texttt{CJAD}). \textit{Custom Jacobian} comes from having four different types of Jacobians. The structure of \texttt{CJAD} is similar to \texttt{FAD}, but instead of storing all the Jacobians as a vector consisting of \texttt{SparseMatrixCSC}-types, each element in the vector is now of type \texttt{CustomJac}:
 \lstinputlisting{code/CJAD-struct.jl}
 \texttt{CustomJac} is an abstract type that has four structs that extend it:
 \begin{itemize}
