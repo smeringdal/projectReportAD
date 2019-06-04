@@ -2,6 +2,6 @@
 n = 5
 v = rand(n)
 w = rand(n)
-dotProduct = v .* w
-println("Dot product of two random vectors:")
-println("$dot_product")
+elementProduct = v .* w
+println("Element-wise product of two random vectors:")
+println("$elementProduct")
