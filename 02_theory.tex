@@ -19,14 +19,14 @@ If AD is not symbolic differentiation, you might think that it is finite differe
 \begin{equation*}
     \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
 \end{equation*}
-with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$, and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Hence, the finite-difference method is not fully robust and is not what we call AD.
+with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$, and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called the truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Finding the correct value for $h$ can be difficult and wrong choice of $h$ can lead to unstable methods. This is neither what we call AD.
 
 AD can be split into two different methods -- forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, the methods keep track of the function values and the corresponding values of the derivatives as we go. Both methods do this by separating each expression into a finite set of elementary operations. 
 
 \subsection{Forward Automatic Differentiation}
-In forward AD, the function and derivative value are stored in a tuple $[\cdot, \cdot]$. In this way, we can continuously update both the function value and the derivative value for every operation we perform on a given tuple. 
+In forward AD, the function and derivative value are stored in a tuple $[\cdot, \cdot]$. This tuple is called an AD-variable. In this way, we can continuously update both the function value and the derivative value for every operation we perform on a given AD-variable. 
 
-As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$, where $x$ is a scalar variable. If we evaluate this function for the AD-variable $x$, represented as the pair $[\adpair{x}{1}]$, the result is [\adpair{f}{f_x}]. In the pair $[\adpair{x}{1}]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$, and $f_x$ is the numerical value of $f'(x)$.  We then define the four elementary arithmetic operators for our tuples, such that for functions $f$ and $g$,
+As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$, where $x$ is a scalar variable. If we evaluate this function for the AD-variable $x$, represented as the tuple $[\adpair{x}{1}]$, the result will be the AD-variable [\adpair{f}{f_x}]. In the tuple $[\adpair{x}{1}]$, $x$ is the numerical value of $x$ and $1 = \frac{dx}{dx}$. Similar for $f(x)$, where $f$ is the numerical value of $f(x)$, and $f_x$ is the numerical value of $f'(x)$.  We then define the four elementary arithmetic operators for the AD-variables, such that for functions $f$ and $g$,
 \begin{equation}
     \begin{aligned}
     &\big[\adpair{f}{f_x}\big] \pm \big[\adpair{g}{g_x}   \big] = \big[\adpair{f \pm g}{f_x \pm g_x} \big] ,\\\\
@@ -35,11 +35,11 @@ As an example, consider the scalar function $f = f(x)$ with its derivative $f_x$
 \end{aligned}
 \label{eq:arithmeticOperators}
 \end{equation}
-It is also necessary to define the chain rule so that for a function h(x)
+It is also necessary to define the chain rule such that for a function h(x)
 \begin{equation*}
 h\big(f(x)\big) = h\bigg(\big[ \adpair{f }{f_x}  \big]\bigg) = \big[ \adpair{h(f)}{ f_x\cdot h'(f)} \big].
 \end{equation*}
-The only things that remain to be defined are the rules concerning elementary functions like
+Lastly the rules concerning the elementary functions are defined
 \begin{equation}
     \begin{aligned}
         &\exp\bigg(\big[ \adpair{f}{f_x}  \big]\bigg) =  \big[ \adpair{\exp(f)}{\exp(f)\cdot f_x}  \big],\\
@@ -48,12 +48,12 @@ The only things that remain to be defined are the rules concerning elementary fu
     \end{aligned}
 \label{eq:elementaryFunctions}
 \end{equation}
-When these arithmetic operators and the elementary functions are implemented, you are able to evaluate the derivative of any scalar function without actually doing any form of differentiation yourself. Let us look at a step by step example, where 
+When these arithmetic operators and the elementary functions are implemented, the program is able to evaluate the derivative of any scalar function without any user input. Let us look at a step by step example, where 
 \begin{equation}
     \label{eq:forwardADExample}
     f(x) = x\cdot\exp(2x) \hspace{3em} \text{for}\hspace{1em} x = 2.
 \end{equation}
-The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD variables with derivative equal to 0, such that
+The declaration of the AD-variable gives $x = [2 \adpair{}{}  1]$. All scalars can be viewed as AD-variables with derivative equal to 0, such that
 \begin{align*}
     2x &= [ \adpair{2}{0}  ]\cdot [ \adpair{2}{1} ] %\\
     =[ \adpair{2\cdot2}{0\cdot2 + 2\cdot 1}  ]%\\
@@ -107,12 +107,12 @@ This is very convenient, but how does dual numbers handle elementary functions l
 \end{align*}
 This means that to make dual numbers handle elementary functions, the first-order Taylor expansion needs to be implemented. In practice, this amounts to implementing the elementary differentiation rules described in \eqref{eq:elementaryFunctions}. 
 
-The drawback of implementing AD with dual numbers becomes clear for functions of multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Let us say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter, and the rest as constants:
+The drawback of implementing AD with dual numbers becomes clear for functions of multiple variables. Let the function $f$ be defined as $f(x,y,z) = x\cdot y + z$. Say we want to know the function value for $(x,y,z) = (2,3,4)$ together with all the derivatives of $f$. First we evaluate $f$ with $x$ as the only varying parameter, and the rest as constants:
 \begin{align*}
     f(x,y,z) &= (2+1\epsilon)\cdot(3+0\epsilon) + (1+0\epsilon)%\\
         =7+3\epsilon.
 \end{align*}
-Here, $7$ is the function value of $f$, while $3$ is the derivative value, $f_x$, of $f$ with respect to $x$. To obtain $f_y$ and $f_z$, we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers -- when the function evaluated has $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
+Here, $7$ is the function value of $f$, while $3$ is the derivative value of $f$ with respect to $x$ ($f_x$). To obtain $f_y$ and $f_z$, we need two more function evaluations with respectively $y$ and $z$ as the varying parameters. This example illustrates the weakness of forward AD implemented with dual numbers -- when the function evaluated has $n$ input variables, we need $n$ function evaluations to determine the gradient of the function.
 
 \subsection{Backward Automatic Differentiation}
 \label{sec:BackwardAD}
@@ -141,33 +141,33 @@ Lastly, calculating the derivative of $g_3$ with respect to $x$ in the same way 
     = \exp(2x) + x\cdot 2\exp(2x)% \\
     = (1+2x)\exp(2x).
 \end{align*}
-This shows how forward AD actually uses the chain rule on a sequence of elementary functions with respect to the independent variables, in this case $x$. Backward AD also uses the chain rule, but in the opposite direction; it uses it with respect to dependent variables. The chain rule then has the form
+This show how forward AD can be expressed as using the chain rule on a sequence of elementary functions with respect to the independent variables, in this case $x$. Backward AD also uses the chain rule, but in the opposite direction; it uses it with respect to dependent variables. The chain rule then has the form
 \begin{equation}
     \label{eq:chainRuleReverse}
     \frac{\partial s}{\partial u} = \sum_i\left(\frac{\partial f_i}{\partial u}\cdot\frac{\partial s}{\partial f_i}\right),
 \end{equation}
 for some $s$ to be chosen.
 
-If we again choose  $f(x) = x\cdot\exp(2x)$ and expand it using the same sequence of elementary functions as in \eqref{eq:BackwardADSeperationSimple}, the expressions from the chain rule \eqref{eq:chainRuleReverse} become
+If we again choose  $f(x) = x\cdot\exp(2x)$ and expand it using the same sequence of elementary functions as in \eqref{eq:BackwardADSeperationSimple}, the expressions from the chain rule \eqref{eq:chainRuleReverse} become 
 \begin{alignat*}{2}
     \frac{\partial s}{\partial g_3} &= \text{unknown}\\
     \frac{\partial s}{\partial g_2} &= \frac{\partial g_3}{\partial g_2} \cdot \frac{\partial s}{\partial g_3} = x\cdot \frac{\partial s}{\partial g_3} \\
     \frac{\partial s}{\partial g_1} &= \frac{\partial g_3}{\partial g_1}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial g_1}\cdot \frac{\partial s}{\partial g_2} = g_2 \cdot \frac{\partial s}{\partial g_2} \\
     \frac{\partial s}{\partial x} &= \frac{\partial g_3}{\partial x}\cdot \frac{\partial s}{\partial g_3} + \frac{\partial g_2}{\partial x}\cdot \frac{\partial s}{\partial g_2} + \frac{\partial g_1}{\partial x}\cdot \frac{\partial s}{\partial g_1} = g_2\cdot \frac{\partial s}{\partial g_3} + 2\cdot \frac{\partial s}{\partial g_1}.\\
 \end{alignat*}
-By substituting $s$ with $g_3$ gives
+Substituting $s$ with $g_3$ gives
 \begin{align*}
     \frac{\partial g_3}{\partial g_3} &= 1\\
     \frac{\partial g_3}{\partial g_2} &= x\\
     \frac{\partial g_3}{\partial g_1} &= \exp(2x)\cdot x\\
-    \frac{\partial g_3}{\partial x} &= \exp(2x)\cdot 1 + 2\cdot\exp(2x)\cdot x = (1 + 2x)\exp(2x),\\
+    \frac{\partial g_3}{\partial x} &= \exp(2x)\cdot 1 + 2\cdot\exp(2x)\cdot x = (1 + 2x)\exp(2x).\\
 \end{align*}
-hence we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of $f$ compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z\bigl(\sin(x^2)+yx\bigr)$ and 
+Hence, we obtain the correct derivative $f_x$. By now you might wonder why make this much effort to obtain the derivative of $f$ compared to just using forward AD. The answer to this comes by looking at a more complex function with multiple input parameters. Let $f(x,y,z) = z\bigl(\sin(x^2)+yx\bigr)$ and 
 \begin{equation}
     g_1 = x^2, \quad g_2 = x\cdot y, \quad g_3 = \sin(g_1), \quad g_4 = g_2 + g_3, \quad g_5 = z\cdot g_4.
     \label{eq:DependencyBackwardAD}
 \end{equation}
-Now the derivatives from the chain rule in \myeqref{eq:chainRuleReverse} become% \\
+Now the derivatives from the chain rule in \myeqref{eq:chainRuleReverse} become
 \begin{multicols}{3}
     \noindent
     \begin{align*}
@@ -204,19 +204,20 @@ substituting $s$ with $g_5$ yields
         \frac{\partial g_5}{\partial z}   &= \sin(x^2)+xy
     \end{align*}
 \end{multicols}
-The calculation of the derivatives together with a dependency graph can be seen in \autoref{fig:depency_graph_backward_AD}. This shows that we get all the derivatives of $f(x) = g_5$ with a single function evaluation!
+The calculation of the derivatives together with a dependency graph can be seen in \autoref{fig:depency_graph_backward_AD}. This shows that we get all the derivatives of $f(x) = g_5$ with a single function evaluation.
 \begin{figure}[H]
 	\centering
 	    \includegraphics[width = 0.9\textwidth]{figures/dependency_graph_backward_AD.pdf}
  	    \caption{Graphs to visualize the process of backward AD. To the left is a dependency graph of the elementary functions in \eqref{eq:DependencyBackwardAD} and to the right are the derivatives of $g_5$ with respect to the dependencies given in the dependency graph.}
 	\label{fig:depency_graph_backward_AD}
 \end{figure}
-Comparing this to the method of dual numbers from \autoref{sec:DualNumbers}, where we would have to evaluate $f$ three times, once for each derivative, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function have, you only need one function evaluation to get all the derivatives of the function. 
-The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
+Comparing this to the method of dual numbers from \autoref{sec:DualNumbers}, where we would have to evaluate $f$ three times, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function has, you only need one function evaluation to get all the derivatives of the function. 
 
+The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
+\todo{HERE}
 \subsection{Forward Automatic Differentiation With Multiple Parameters}
 \label{sec:FADWithMultipleParameters}
-When we are dealing with functions with many input parameters and we wish to implement a forward AD, there are alternative ways of implementing this, rather than implementing with dual numbers and evaluating the function $n$ times.  \citet{doi:10.1137/080743627} describes a method that calculates all the derivatives in one function evaluation. To illustrate this method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
+When we are dealing with functions with many input parameters and we wish to implement forward AD, there are alternative ways of implementing this, rather than implementing with dual numbers and evaluating the function $n$ times.  \citet{doi:10.1137/080743627} describes a method that calculates all the derivatives in one function evaluation. To illustrate this method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding AD-variables
 \begin{equation*}
     [\adpair{x}{(1,0,0)^\top}]\hspace{2em},\hspace{2em}
     [\adpair{y}{(0,1,0)^\top}]\hspace{2em},\hspace{2em}
