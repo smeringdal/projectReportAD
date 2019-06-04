@@ -79,7 +79,7 @@ It is surprising that creating a \texttt{LAD} struct should take more time than 
 The new profiling result with the updated \texttt{createVariable()} can be seen in \autoref{fig:profileFastCreateVar}. The time spent in \texttt{createVariable()} is almost eliminated and we can see that approximately all the time spent in \texttt{flux} is used for AD calculations. This is what is expected as initialization should be far less time consuming than AD calculations. 
 
 As discussed in \autoref{ch:FlowSolver}, by only looking at the assemble of the residual functions, and not the full simulation, we eliminate the linear solver from the benchmark, and we get a better understanding of how efficient the AD tools are. \autoref{tab:FlowSolverAssemblyTestWithLAD} is the same table as \autoref{tab:FlowSolverAssemblyTest}, assembling the residual functions 100 times, but with the measured time for Local AD added to the end of the table.
-\begin{table}[htb]
+\begin{table}[b]
     \centering
     \caption{Table with speed tests of different AD methods assembling the "Single-Phase Compressible AD Solver" residual function 100 times for different discretizations.}
     \label{tab:FlowSolverAssemblyTestWithLAD}
