@@ -75,7 +75,7 @@ The matrix C in the discrete operators are created such that when it is multipli
     \int_\Omega p\nabla \cdot \textbf{v} d\Omega + \int_\Omega \textbf{v}\nabla p d\Omega = 0.
 \end{equation*}
 
-This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
+This holds for the discrete case as well \citep{lieMrstUrl}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
 
 
 Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, as explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end, all the equations we want to solve should be in residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$, so that we can use the Newton-Raphson method described in \myeqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. One of the advantages of defining the discrete gradient- and divergence operator is that the continuous and discrete forms of the equations look very similar. Hence, I will first state the continuous version of the equation and then the discrete, so that it is easy to see how similar they look. I start by defining Darcy's law, which explains how the oil will flow through the porous rock
