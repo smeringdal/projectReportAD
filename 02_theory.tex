@@ -2,7 +2,7 @@
 \label{ch:theory}
 \section{Automatic Differentiation}
 \label{sec:AD}
-Automatic differentiation (AD) is a method that enables a computer to numerically evaluate the derivative of a function specified by a computer program with very little effort from the user. If you have not heard of AD before, the first thing you might think of is algebraic or symbolic differentiation. In this type of differentiation the computer learns the basic rules from calculus
+Automatic differentiation (AD) is a method that enables a computer to numerically evaluate the derivative of a function specified by a computer program with very little effort from the user. If you have not heard of AD before, the first thing you might think of is algebraic or symbolic differentiation. In this type of differentiation, the computer learns the basic rules from calculus
 \begin{align*}
     &\frac{d}{dx}x^n     = n\cdot x^{n-1}, \\
     &\frac{d}{dx}\cos(x)  = -\sin(x), \\
@@ -19,7 +19,7 @@ If AD is not symbolic differentiation, you might think that it is finite differe
 \begin{equation*}
     \frac{df}{dx} = \frac{f(x+h) - f(x)}{h}
 \end{equation*}
-with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$, and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called the truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ can not be too small, because then you get round-off errors. Finding the correct value for $h$ can be difficult and wrong choice of $h$ can lead to unstable methods. This is neither what we call AD.
+with a small $h$ to obtain the numerical approximation of the derivative of $f$. This approach is not optimal because, first of all, if you choose an $h$ too small, you will get problems with rounding errors on your computer. This is because when h is small, you will subtract two very similar numbers, $f(x+h)$ and $f(x)$, and then divide by a small number $h$. This means that any small rounding errors in the subtraction, which may occur due to machines having a finite precision when storing numbers, will be amplified by the division. Secondly, if you choose $h$ too large, your approximation of the derivative will not be accurate. This is called the truncation error. Hence, with finite differences you have the problem that you need a sufficiently small step size $h$ to reduce the truncation error, but $h$ cannot be too small, because then you get round-off errors. Finding the correct value for $h$ can be difficult and wrong choice of $h$ can lead to unstable methods. This is neither what we call AD.
 
 AD can be split into two different methods -- forward AD and backward AD. Both methods are similar to symbolic differentiation in the way that we implement the differentiation rules, but they differ by instead of differentiating symbols and then inserting values for the symbols, the methods keep track of the function values and the corresponding values of the derivatives as we go. Both methods do this by separating each expression into a finite set of elementary operations. 
 
@@ -214,7 +214,7 @@ The calculation of the derivatives together with a dependency graph can be seen 
 Comparing this to the method of dual numbers from \autoref{sec:DualNumbers}, where we would have to evaluate $f$ three times, this is a big improvement. This illustrates the strength of backward AD -- no matter how many input parameters a function has, you only need one function evaluation to get all the derivatives of the function. 
 
 The disadvantage of backward AD is that to be able carry along function and derivative values as we did in forward AD, we need to implement the dependency tree shown in \autoref{fig:depency_graph_backward_AD}. This makes the implementation of backward AD much harder than for forward AD, and an inefficient implementation of this tree will reduce the advantage of backward AD. Also, if $f$ is a vector-evaluated function $f: \Re^n \rightarrow \Re^m$ and not a scalar function, backward AD needs to run $m$ times. Hence, if $n\approx m$, forward AD and backward AD will have approximately the same complexity. This is the main reason why we in the following will focus on implementing forward rather than backward AD.
-\subsection{Forward Automatic Differentiation With Multiple Parameters}
+\subsection{Forward Automatic Differentiation with Multiple Parameters}
 \label{sec:FADWithMultipleParameters}
 When we are dealing with functions with many input parameters and we wish to implement forward AD, there are alternative ways of implementing this, rather than implementing with dual numbers and evaluating the function $n$ times.  \citet{doi:10.1137/080743627} describes a method that calculates all the derivatives in one function evaluation. To illustrate this method, consider a scalar function $f: \Re^n \rightarrow \Re$, that we want to obtain the gradient of. Then, the main idea is that we define what we call our \textit{primary variables}. This is all the variables in the space that we are currently working in. Each primary variable is an AD-variable containing the derivatives of itself with respect to all the other primary variables. Say we have three variables $x$, $y$ and $z$, and for any function $f(x,y,z)$ we are interested in finding the gradient of $f$, $\nabla f=(f_x, f_y, f_z)^\top$. To achieve this, we define the corresponding primary AD-variables
 \begin{equation*}
@@ -234,7 +234,7 @@ This result is equal to the tuple
     \big(f(x,y,z) \hspace{0.5em},\hspace{0.5em} \nabla f(x,y,z)\big) = \big(xyz ,\hspace{0.5em} (yz,xz,xy)^\top\big)
 \end{equation*}
 for the corresponding $x$, $y$ and $z$ values. 
-\subsection{Forward Automatic Differentiation With Vector Functions}
+\subsection{Forward Automatic Differentiation with Vector Functions}
 \label{sec:FADWithVectorParameters}
 For numerical solution of (Partial) Differential Equations, the functions we evaluate as part of the discretization are usually vector functions and not scalar functions: $f: \Re^n \rightarrow \Re^m$. Neidinger's method still applies, with primary AD-variables now being a tuple with a vector in the first element and instead of the gradient in the second, it is now the Jacobian. For a function $f$, the Jacobian with respect to $n$ primary variables is given as
 \begin{align*}
@@ -360,7 +360,7 @@ Here, \textbf{n} is the unit normal to the cell $\Omega_i$, so \myeqref{eq:conse
 \begin{figure}[H]
     \centering
     \includegraphics[width = 0.7\textwidth]{figures/grid_two_cells.pdf}
-    \caption{Figure of two adjacent cells $\Omega_i$ and $\Omega_k$. The average value of the cell is given by $u_i$. The boundary between the cells is $\Gamma_{i,k}$ with value at the centre equal $\tilde{u}_{i,k}$ and outward normal vector $n_{i,k}$}
+    \caption{Figure of two adjacent cells $\Omega_i$ and $\Omega_k$. The average value of the cell is given by $u_i$. The boundary between the cells is $\Gamma_{i,k}$ with value at the center equal $\tilde{u}_{i,k}$ and outward normal vector $n_{i,k}$}
     \label{fig:gridTwoCells}
 \end{figure}
 Now, the flux through the common interface $\Gamma_{i,k}$ can be computed by
@@ -409,7 +409,7 @@ where $q_i$ is the integrated accumulation over cell $\Omega_i$. Now, we can get
     \end{array}
     \right.
 \end{align*}
-This means we can solve the Poisson \myeqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. For this simple Poisson equation, we still only end up with a linear system of equations that we may as well solve without AD. The only benefit is that we never need to form the matrix $\mathbf{A}$ explicitly, which can be bit complicated for more complex grids. For nonlinear PDEs, we would also need to linearize the local discrete equations, and the construction of the matrix \textbf{A} generally becomes more tricky.  The ease of using AD becomes clearer when we combine it with the discrete differentiation operators that will be defined in the next subsection.
+This means we can solve the Poisson \myeqref{eq:Poisson}, using the scheme explained in \eqref{eq:newtonRaphsonVector} and by having $u$ as an AD-variable. For this simple Poisson equation, we still only end up with a linear system of equations that we may as well solve without AD. The only benefit is that we never need to form the matrix $\mathbf{A}$ explicitly, which can be bit complicated for more complex grids. For nonlinear PDEs, we would also need to linearize the local discrete equations, and the construction of the matrix \textbf{A} generally becomes trickier.  The ease of using AD becomes clearer when we combine it with the discrete differentiation operators that will be defined in the next subsection.
 
 \subsection{Discrete Differentiation Operators}
 \label{sec:DiscreteOperators}
