@@ -333,7 +333,7 @@ for an initial $x_0$, will converge to a root of $f$ given that $f$ is sufficien
     \textbf{A}\boldsymbol{x} = \textbf{b},
     \label{eq:linearSystem}
 \end{equation}
-which we can write on residual form such that
+which we can write in residual form such that
 \begin{equation*}
 	\boldsymbol{F}(\boldsymbol{x}) = \textbf{A}\boldsymbol{x} - \boldsymbol{b} = 0 .
 \end{equation*}
@@ -346,7 +346,7 @@ Here, $J_{\boldsymbol{F}}  (\boldsymbol{x}^n)^{-1}$ is the inverse of the Jacobi
 
 \subsection{Solving the Poisson Equation}
 \label{sec:poissonEq}
-For a simple linear system like \myeqref{eq:linearSystem} it may seem a bit unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver. But for applications to the numerical solution of PDEs, this approach greatly simplifies the process of (linearizing and) assembling the linear systems that appear when you solve the (non)linear system of discretized equations. Indeed, using \myeqref{eq:newtonRaphsonVector} with AD, all you have to do is implement the discretized equations on residual form.  As a preface to introducing how we will do this, we consider the Poisson equation
+For a simple linear system like \myeqref{eq:linearSystem} it may seem a bit unnecessary to make the effort of using AD to solve for $\boldsymbol{x}$. We could just as well have used some built in linear solver. But for applications to the numerical solution of PDEs, this approach greatly simplifies the process of (linearizing and) assembling the linear systems that appear when you solve the (non)linear system of discretized equations. Indeed, using \myeqref{eq:newtonRaphsonVector} with AD, all you have to do is implement the discretized equations in residual form.  As a preface to introducing how we will do this, we consider the Poisson equation
 \begin{equation}
     -\nabla(\textbf{K}\nabla u) = q,
     \label{eq:Poisson}
@@ -399,7 +399,7 @@ we manage to eliminate $\tilde{u}_{i,k}$ and get a computable expression for the
     \sum_k T_{i,k}(u_k - u_i) = q_i, \hspace{3em} \forall \Omega_i \in \Omega,
     \label{eq:PoissonSolvableTwoCells}
 \end{equation}
-where $q_i$ is the integrated accumulation over cell $\Omega_i$. Now, we can get a linear system of the form \textbf{A}\textbf{u} = \textbf{b},  which on residual form becomes \textbf{F}(\textbf{u}) = \textbf{A}\textbf{u} - \textbf{b} = 0 where
+where $q_i$ is the integrated accumulation over cell $\Omega_i$. Now, we can get a linear system of the form \textbf{A}\textbf{u} = \textbf{b},  which in residual form becomes \textbf{F}(\textbf{u}) = \textbf{A}\textbf{u} - \textbf{b} = 0 where
 \begin{align*}
     \textbf{A}_{i,j} = 
     \left\lbrace

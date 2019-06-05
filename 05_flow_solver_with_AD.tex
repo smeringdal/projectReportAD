@@ -4,11 +4,11 @@ To compare the different AD implementations in Julia and MATLAB I have implement
 
 \section{Grid Construction}
 \label{sec:GridConstruction}
-The example consist of modelling how the pressure drops within a rectangular reservoir measuring $200\times 200 \times 50 \text{m}^3$ when we have a well that is producing oil. As mentioned in the introduction, this is called primary production, and because of high pressure in the reservoir, the oil flows out by itself. "Single-phase solver" only means that we do not have different phases of fluids, like water and/or gas, present during the simulation. In this simulation we assume there is only oil present in the reservoir. As the main purpose of this example is to compare the AD tools in MATLAB and Julia, and not the process of solving the problem, including setting up the grid and other necessary variables, some of the initialization and plotting have been performed in Julia by calling code from MRST. This has been done by using the package MATLAB.jl \emph{\citep{MATLAB.jl}}. This package allows calling MATLAB functions from Julia and retrieve the output variables. This is done by the function call
+The example consist of modelling how the pressure drops within a rectangular reservoir measuring $200\times 200 \times 50 \text{m}^3$ when we have a well producing oil. As mentioned in the introduction, this is called primary production, and because of high pressure in the reservoir, the oil flows out by itself. "Single-phase solver" only means that we do not have different phases of fluids, like water and/or gas, present during the simulation. In this simulation we assume there is only oil present in the reservoir. As the main purpose of this example is to compare the AD tools in MATLAB and Julia, and not the process of solving the problem, including setting up the grid and other necessary variables, some of the initialization and plotting have been performed in Julia by calling code from MRST. By using the package MATLAB.jl \emph{\citep{MATLAB.jl}}, we can call MATLAB functions from Julia and retrieve the output variables. This is done by the function call
 \lstinputlisting{code/mxcall.jl}
-where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia, we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G}, that contains the grid properties, is now a structured array (struct), having all the information on cells, facets, vertices and nodes that we need to make the discrete divergence and gradient operators as explained in \autoref{sec:ApplicationsAD}. 
+where we have three input parameter and two output parameters. We have to specify the number of output parameters after the MATLAB function name.  By calling MATLAB from Julia, we can use MRST's \texttt{G = computeGeometry(...)} function to set up the grid for the simulation. The grid of the reservoir can be seen in \autoref{fig:flowSolverGrid}. The variable \texttt{G}, that contains the grid properties, is now a structured array (struct), having all the information on cells, facets, vertices and nodes that we need to make the discrete gradient- and divergence operator as explained in \autoref{sec:ApplicationsAD}. 
 
-Next, we define the properties of the rock. As explained in \autoref{sec:OilReservoirs}, in an oil reservoir, the oil lies inside porous rock and the properties of the rock will affect the flow of the oil. The amount of oil we can have inside a cell is measured as pore volume and the ability to transmit fluids is given by the permeability. We start by making a new variable, \texttt{rock}, that contains the permeability and the porosity of the rock. The porosity is a number between zero and one, describing the porosity of the rock at a reference pressure. The amount of fluid inside a cell is given by the pore volume. To find an expression for this, we say that in our model the rock is compressed constantly as a function of pressure. This gives us an analytic solution for the pore volume, given as a function of pressure
+Next, we define the properties of the rock. As explained in \autoref{sec:OilReservoirs}, in an oil reservoir, the oil lies inside porous rock and the properties of the rock will affect the flow of the oil. The amount of oil we can have inside a cell is measured as pore volume and the ability to transmit fluids is given by the permeability. We start by making a new variable, \texttt{rock}, that contains the permeability and the porosity of the rock. The porosity is a number between zero and one, describing the porosity of the rock at a reference pressure. To find an expression for the pore volume, we say that in our model the rock is compressed constantly as a function of pressure. This gives us an analytic solution for the pore volume, given as a function of pressure
 \begin{equation}
     pv(p) = \text{pv}_r \exp[c_r\cdot(p-p_r)].
     \label{eq:poreVolume}
@@ -25,39 +25,39 @@ where $\rho_r = 850\text{kg}/\text{m}^3$ is the reference density at the referen
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures/flow_solver_pore-volume.eps}
-        \caption{The pore volume in a cell as a function of pressure.}
+        \caption{}
         \label{fig:flowSolverPoreVolume}
         
     \end{subfigure}
     \begin{subfigure}[t]{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures/flow_solver_density.eps}
-        \caption{The density of the oil in the reservoir plotted as a function of pressure.}
+        \caption{}
         \label{fig:flowSolverDensity}
     \end{subfigure}
-    \caption{}
+    \caption{The pore volume of a cell (\autoref{fig:flowSolverPoreVolume}) and the density of the oil (\autoref{fig:flowSolverDensity}), plotted as a function of pressure.}
 \end{figure}
 
 The initial pressure in the reservoir is calculated by solving the nonlinear ODE
 \begin{equation*}
     \frac{dp}{dz} = g\cdot \rho(p), \quad p(z = 0) = p_r = 200\text{bar} 
 \end{equation*}  
-for the fluid density given by \myeqref{eq:pressureSolverDensity} and $g$ as the gravity. The well is then inserted in 8 grid elements using the \texttt{W = addWell(...)} function. The grid with initial pressure and well can be seen in \autoref{fig:flowSolverGridWithWell}.
+for the fluid density given by \myeqref{eq:pressureSolverDensity} and $g$ as the gravity. The well is then inserted in 8 grid elements using the \texttt{W = addWell(...)} function. The grid with the initial pressure and a visualization of the well can be seen in \autoref{fig:flowSolverGridWithWell}.
 \begin{figure}[H]
     \centering
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
         \includegraphics[width = \textwidth]{figures/flowSolver_grid.eps}
-        \caption{Uniform $10\times 10 \times 10$ grid of the $200\times 200 \times 50 \text{m}^3$ big reservoir.}
+        \caption{}
         \label{fig:flowSolverGrid}
     \end{subfigure}
     \hfill
     \begin{subfigure}[t]{0.48\textwidth}
         \centering
         \includegraphics[width = \textwidth]{figures/flowSolver_gridWithWell.eps}
-        \caption{Reservoir grid plotted with initial pressure and well P1. Pressure is given in bar. The well covers 8 grid elements. Some grid elements are removed to give a better visualization of the well.}
+        \caption{}
         \label{fig:flowSolverGridWithWell}
     \end{subfigure}
-    \caption{Samle}
+    \caption{The uniform $10\times 10 \times 10$ grid of the $200\times 200 \times 50 \text{m}^3$ big reservoir plotted in \autoref{fig:flowSolverGrid}. \autoref{fig:flowSolverGridWithWell} is the same grid plotted with the initial pressure and the well P1. Pressure is given in bar. The well covers 8 grid elements and some grid elements are removed from the plot to give a better visualization of the well.}
 \end{figure}
 
 \section{Setup of Governing Equations}
@@ -78,7 +78,7 @@ The matrix C in the discrete operators are created such that when it is multipli
 This holds for the discrete case as well \emph{\citep{lieMrstUrl}}, and hence the adjoint of \texttt{C} is the negative transpose of \texttt{C}.
 
 
-Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, as explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end, all the equations we want to solve should be on residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$, so that we can use the Newton-Raphson method described in \myeqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. One of the advantages of defining the discrete gradient- and divergence operator is that the continuous and discrete forms of the equations look very similar. Hence, I will first state the continuous version of the equation and then the discrete, so that it is easy to see how similar they look. I start by defining Darcy's law, which explains how the oil will flow through the porous rock
+Now we have all the ingredients to set up the governing equations for the flow in the reservoir. We use a finite volume method to discretize in space, as explained in \autoref{sec:ApplicationsAD}, and a backward Euler method to discretize in time. In the end, all the equations we want to solve should be in residual form, $\boldsymbol{F}(\boldsymbol{x}) = 0$, so that we can use the Newton-Raphson method described in \myeqref{eq:newtonRaphsonVector} to solve the system. As there are multiple equations that will be a part of the residual function $\boldsymbol{F}(\boldsymbol{x})$, we define them separately first. One of the advantages of defining the discrete gradient- and divergence operator is that the continuous and discrete forms of the equations look very similar. Hence, I will first state the continuous version of the equation and then the discrete, so that it is easy to see how similar they look. I start by defining Darcy's law, which explains how the oil will flow through the porous rock
 
 \begin{equation}
     \textbf{v} = - \frac{K}{\mu}(\nabla p - \textbf{g}\rho).
@@ -126,7 +126,7 @@ If we simulate how the pressure in the reservoir will decay, we will get the res
 \end{figure}
 Note the different intervals for the color bar in \autoref{fig:flowSolverResult} compared to \autoref{fig:flowSolverGridWithWell}. With the current color bar interval, at initial state, the whole reservoir will be displayed red. Hence, we can see how the reservoir from the beginning being approximately 200 bar everywhere, begins with the largest pressure decay close to the well, but after some time, the oil is pushed towards the well by the pressure differences and the pressure also begins to decay furthest away from the well. 
 
-\autoref{fig:flowSolverProduction} shows the development of the production rate and the average pressure inside the reservoir. We can see how the production rate follows the average pressure inside the reservoir, and that after some time, it approaches zero. This is when primary production ends, as explained in \autoref{sec:OilReservoirs}, and we need to apply external pressure to continue production in secondary production. To do this in the best possible way, it is important to be able to simulate how the pressure evolves inside the reservoir so that we can make good decisions on which actions produce the best possible results and when to take these actions. This flow solver is a simple example of how we can model primary production in a reservoir elegantly with governing equations on residual form, created by discrete differentiation operators and AD. A simulation of secondary production can be seen in \autoref{sec:TwoPhaseSimulation}.
+\autoref{fig:flowSolverProduction} shows the development of the production rate and the average pressure inside the reservoir. We can see how the production rate follows the average pressure inside the reservoir, and that after some time, it approaches zero. This is when primary production ends, as explained in \autoref{sec:OilReservoirs}, and we need to apply external pressure to continue production in secondary production. To do this in the best possible way, it is important to be able to simulate how the pressure evolves inside the reservoir so that we can make good decisions on which actions produce the best possible results and when to take these actions. This flow solver is a simple example of how we can model primary production in a reservoir elegantly with governing equations in residual form, created by discrete differentiation operators and AD. A simulation of secondary production can be seen in \autoref{sec:TwoPhaseSimulation}.
 \begin{figure}[H]
 \centering
 \begin{minipage}{.47\textwidth}
